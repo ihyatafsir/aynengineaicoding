@@ -16,6 +16,7 @@ import re
 import ast
 import json
 import time
+import subprocess
 import urllib.request
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -96,7 +97,15 @@ class AynCodingEngine:
                 return {"valid": True, "error": None}
             except Exception as e:
                 return {"valid": False, "error": f"JSON SyntaxError: {e}"}
-        # For other languages (Rust, Go, TS, JS, C), perform bracket balance checks
+        elif lang in ["js", "javascript"]:
+            try:
+                res = subprocess.run(["node", "--check"], input=code, capture_output=True, text=True, timeout=10)
+                if res.returncode == 0:
+                    return {"valid": True, "error": None}
+                return {"valid": False, "error": res.stderr.strip() or "JavaScript SyntaxError"}
+            except Exception:
+                pass
+        # For other languages (Rust, Go, TS, C), perform bracket balance checks
         brackets = { '(': ')', '{': '}', '[': ']' }
         stack = []
         for char in code:
