@@ -2,7 +2,7 @@
 """
 ayncode
 
-AynEngine AI Coding Edition - Sovereign CLI Developer Tool
+AynEngine AI Coding Edition (v2.0) - Sovereign CLI Developer Tool
 Guided by the 5 Classical Arabic Lexicographical & Grammatical Pillars:
 1. Al-Mufradāt (al-Rāghib) -> Ontological Domain Modeling & Teleology
 2. Asās al-Balāghah (al-Zamakhsharī) -> Idiomatic Eloquence & Abstraction Integrity
@@ -39,7 +39,7 @@ BANNER = f"""{CYAN}{BOLD}
   ██╔══██║  ╚██╔╝  ██║╚██╗██║██║     ██║   ██║██║  ██║██╔══╝  
   ██║  ██║   ██║   ██║ ╚████║╚██████╗╚██████╔╝██████╔╝███████╗
   ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝
-{RESET}{BOLD}🏛️ AynEngine AI Coding Edition: Sovereign 5-Pillar Epistemic Engine{RESET}
+{RESET}{BOLD}🏛️ AynEngine AI Coding Edition (v2.0): Sovereign 5-Pillar Epistemic Engine{RESET}
 """
 
 def print_banner():
@@ -86,7 +86,7 @@ def cmd_audit(args, engine: AynCodingEngine):
         print(f"{YELLOW}⚠️ No source files found to audit in {target}{RESET}")
         return
 
-    print(f"\n{CYAN}🔍 Auditing {len(files_to_audit)} file(s) under 5-Pillar Epistemic Lens...{RESET}\n")
+    print(f"\n{CYAN}🔍 Auditing {len(files_to_audit)} file(s) under 5-Pillar Epistemic Lens (Remote LLM)...{RESET}\n")
 
     for fpath in files_to_audit:
         print(f"{BOLD}📄 Auditing `{fpath.relative_to(Path.cwd()) if fpath.is_relative_to(Path.cwd()) else fpath}`...{RESET}")
@@ -96,6 +96,67 @@ def cmd_audit(args, engine: AynCodingEngine):
         res = engine.audit(code=code, language=lang, filename=fpath.name)
         print(f"\n{res['audit_report']}\n")
         print(f"{CYAN}{'─'*80}{RESET}\n")
+
+def cmd_audit_local(args, engine: AynCodingEngine):
+    target = Path(args.target)
+    if not target.exists():
+        print(f"{RED}❌ Error: File or path not found: {target}{RESET}")
+        sys.exit(1)
+
+    files = [target] if target.is_file() else list(target.rglob(f"*.{args.language or 'js'}"))
+
+    for fpath in files:
+        code = fpath.read_text(encoding="utf-8", errors="ignore")
+        lang = args.language or fpath.suffix.lstrip('.') or "javascript"
+        res = engine.audit_local(code=code, language=lang, filename=fpath.name)
+
+        score_color = GREEN if res["overall_epistemic_score"] >= 85 else YELLOW if res["overall_epistemic_score"] >= 70 else RED
+        print(f"\n{CYAN}{BOLD}╔══════════════════════════════════════════════════════════════════════════════════╗{RESET}")
+        print(f"{CYAN}{BOLD}║ 🏛️  AYNENGINE 5-PILLAR EPISTEMIC AUDIT: {fpath.name:<41} ║{RESET}")
+        print(f"{CYAN}{BOLD}╠══════════════════════════════════════════════════════════════════════════════════╣{RESET}")
+        print(f"║ {BOLD}Lines:{RESET} {res['total_lines']:<10} | {BOLD}Score:{RESET} {score_color}{res['overall_epistemic_score']}% ({res['grade']}){RESET} | {BOLD}Syntax Valid:{RESET} {GREEN if res['syntax_valid'] else RED}{res['syntax_valid']}{RESET}")
+        print(f"{CYAN}{BOLD}╟──────────────────────────────────────────────────────────────────────────────────╢{RESET}")
+        print(f"║ 1️⃣  Al-Mufradāt (Teleology):      {BOLD}{res['pillars']['pillar_1_mufradat_teleology']['score']}/10{RESET} -> {res['pillars']['pillar_1_mufradat_teleology']['critique']}")
+        print(f"║ 2️⃣  Asās al-Balāghah (Eloquence): {BOLD}{res['pillars']['pillar_2_asas_eloquence']['score']}/10{RESET} -> {res['pillars']['pillar_2_asas_eloquence']['critique']}")
+        print(f"║ 3️⃣  Lisān al-ʿArab (Coverage):    {BOLD}{res['pillars']['pillar_3_lisan_exhaustiveness']['score']}/10{RESET} -> {res['pillars']['pillar_3_lisan_exhaustiveness']['critique']}")
+        print(f"║ 4️⃣  Kitāb al-ʿAyn (Primitives):   {BOLD}{res['pillars']['pillar_4_ayn_decomposition']['score']}/10{RESET} -> {res['pillars']['pillar_4_ayn_decomposition']['critique']}")
+        print(f"║ 5️⃣  Al-Kitāb (Governance):        {BOLD}{res['pillars']['pillar_5_sibawayh_governance']['score']}/10{RESET} -> {res['pillars']['pillar_5_sibawayh_governance']['critique']}")
+        print(f"{CYAN}{BOLD}╚══════════════════════════════════════════════════════════════════════════════════╝{RESET}\n")
+
+def cmd_benchmark(args, engine: AynCodingEngine):
+    target = Path(args.target)
+    if not target.exists():
+        print(f"{RED}❌ Error: Path not found: {target}{RESET}")
+        sys.exit(1)
+
+    ext = args.language or "js"
+    files = [str(target)] if target.is_file() else [str(p) for p in target.rglob(f"*.{ext}")]
+
+    if not files:
+        print(f"{YELLOW}⚠️ No files found matching extension *.{ext} in {target}{RESET}")
+        return
+
+    print(f"\n{CYAN}⚡ Running AynEngine 5-Pillar Epistemic Benchmark on {len(files)} file(s)...{RESET}\n")
+    bench = engine.benchmark_codebase(file_paths=files, language=args.language or "javascript")
+
+    if "error" in bench:
+        print(f"{RED}❌ {bench['error']}{RESET}")
+        return
+
+    m_color = GREEN if bench["macro_epistemic_score"] >= 85 else YELLOW if bench["macro_epistemic_score"] >= 70 else RED
+    print(f"{GREEN}{BOLD}════════════════════════════════════════════════════════════════════════════════════════{RESET}")
+    print(f"{BOLD}📊 BENCHMARK SUMMARY: {len(bench['file_audits'])} Files Audited | Macro Epistemic Score: {m_color}{bench['macro_epistemic_score']}% ({bench['macro_grade']}){RESET}")
+    print(f"{GREEN}{BOLD}════════════════════════════════════════════════════════════════════════════════════════{RESET}")
+    print(f"• Pillar 1 (Teleology & Domain Types): {bench['pillar_averages']['p1_teleology']}/10")
+    print(f"• Pillar 2 (Eloquence & Anti-Leakage):  {bench['pillar_averages']['p2_eloquence']}/10")
+    print(f"• Pillar 3 (Error Coverage & States):   {bench['pillar_averages']['p3_exhaustiveness']}/10")
+    print(f"• Pillar 4 (Decomposition & Safety):   {bench['pillar_averages']['p4_decomposition']}/10")
+    print(f"• Pillar 5 (Governance & Contracts):    {bench['pillar_averages']['p5_governance']}/10\n")
+
+    print(f"{BOLD}Per-File Breakdown:{RESET}")
+    for f in bench["file_audits"]:
+        f_color = GREEN if f["overall_epistemic_score"] >= 85 else YELLOW if f["overall_epistemic_score"] >= 70 else RED
+        print(f"  • {f['filename']:<35} : {f_color}{f['overall_epistemic_score']}% ({f['grade']}){RESET}")
 
 def cmd_refactor(args, engine: AynCodingEngine):
     target = Path(args.target)
@@ -169,10 +230,20 @@ def main():
     p_gen.add_argument("-o", "--output", type=str, help="Output file path to save code")
     p_gen.add_argument("--code-only", action="store_true", help="Print only raw code without epistemic rationale")
 
-    # Command: audit
-    p_audit = subparsers.add_parser("audit", help="Perform 5-Pillar Epistemic Code Audit")
+    # Command: audit (remote LLM)
+    p_audit = subparsers.add_parser("audit", help="Perform 5-Pillar Epistemic Code Audit via LLM")
     p_audit.add_argument("target", type=str, help="File or directory to audit")
     p_audit.add_argument("-l", "--language", type=str, help="Explicit language override")
+
+    # Command: audit-local (offline static epistemic auditor)
+    p_audit_local = subparsers.add_parser("audit-local", help="Perform offline 5-Pillar Static Epistemic Audit (deterministic)")
+    p_audit_local.add_argument("target", type=str, help="File to audit")
+    p_audit_local.add_argument("-l", "--language", type=str, help="Language override (python, javascript, rust, etc.)")
+
+    # Command: benchmark
+    p_bench = subparsers.add_parser("benchmark", help="Run 5-Pillar Epistemic Benchmark across multiple files")
+    p_bench.add_argument("target", type=str, help="File or directory containing source files")
+    p_bench.add_argument("-l", "--language", type=str, help="File extension / language to filter (default: js)")
 
     # Command: refactor
     p_refactor = subparsers.add_parser("refactor", help="Refactor code to 5-Pillar standards")
@@ -203,6 +274,10 @@ def main():
         cmd_gen(args, engine)
     elif args.subcommand == "audit":
         cmd_audit(args, engine)
+    elif args.subcommand == "audit-local":
+        cmd_audit_local(args, engine)
+    elif args.subcommand == "benchmark":
+        cmd_benchmark(args, engine)
     elif args.subcommand == "refactor":
         cmd_refactor(args, engine)
 
