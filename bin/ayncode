@@ -103,11 +103,18 @@ def cmd_audit_local(args, engine: AynCodingEngine):
         print(f"{RED}❌ Error: File or path not found: {target}{RESET}")
         sys.exit(1)
 
-    files = [target] if target.is_file() else list(target.rglob(f"*.{args.language or 'js'}"))
+    if target.is_file():
+        files = [target]
+    elif args.language:
+        files = list(target.rglob(f"*.{args.language.lstrip('.')}"))
+    else:
+        files = []
+        for ext in ["py", "js", "ts", "rs", "go", "c", "cpp"]:
+            files.extend(list(target.rglob(f"*.{ext}")))
 
     for fpath in files:
         code = fpath.read_text(encoding="utf-8", errors="ignore")
-        lang = args.language or fpath.suffix.lstrip('.') or "javascript"
+        lang = args.language or fpath.suffix.lstrip('.') or "python"
         res = engine.audit_local(code=code, language=lang, filename=fpath.name)
 
         score_color = GREEN if res["overall_epistemic_score"] >= 85 else YELLOW if res["overall_epistemic_score"] >= 70 else RED
@@ -221,6 +228,13 @@ def main():
         description="AynEngine AI Coding Edition: Sovereign 5-Pillar Epistemic Code Engine",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
+    parser.add_argument(
+        "--provider",
+        type=str,
+        default=os.getenv("AYN_PROVIDER", "deepseek"),
+        choices=["deepseek", "openai", "ollama", "offline"],
+        help="LLM inference provider or offline mode (default: deepseek)"
+    )
     subparsers = parser.add_subparsers(dest="subcommand", help="Available subcommands")
 
     # Command: gen
@@ -268,7 +282,7 @@ def main():
         sys.exit(0)
 
     # Initialize Engine for operational commands
-    engine = AynCodingEngine()
+    engine = AynCodingEngine(provider=args.provider)
 
     if args.subcommand == "gen":
         cmd_gen(args, engine)

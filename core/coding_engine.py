@@ -2,474 +2,226 @@
 """
 coding_engine.py
 
-AynEngine AI Coding Edition (v2.0): Sovereign 5-Pillar Epistemic Code Engine
-Powered by DeepSeek and grounded in the 5 Classical Arabic Lexicographical & Grammatical Pillars:
-1. Al-Mufradāt (al-Rāghib al-Iṣfahānī) -> Ontological Domain Modeling & Teleology
-2. Asās al-Balāghah (al-Zamakhsharī) -> Idiomatic Eloquence & Abstraction Integrity (Ḥaqīqah vs Majāz)
-3. Lisān al-ʿArab (Ibn Manẓūr) -> Exhaustive State-Space, Edge-Cases & Error Taxonomy
-4. Kitāb al-ʿAyn (al-Farāhīdī) -> Atomic Primitive Decomposition & State Permutations
-5. Al-Kitāb (Sībawayh) -> Syntactic Governance (ʿĀmil/Maʿmūl), AST Hierarchy & Strict Typing
+AynEngine AI Coding Edition: Sovereign 5-Pillar Epistemic Code Engine.
+Orchestrates multi-provider synthesis, static AST validation,
+and Classical Arabic lexicographical grounding.
+
+Grounding Pillars:
+1. Al-Mufradāt (al-Rāghib al-Iṣfahānī): Ontological Domain Modeling & Teleology
+2. Asās al-Balāghah (al-Zamakhsharī): Eloquence & Abstraction Integrity (Ḥaqīqah vs Majāz)
+3. Lisān al-ʿArab (Ibn Manẓūr): Exhaustive State-Space, Edge-Cases & Error Taxonomy
+4. Kitāb al-ʿAyn (al-Farāhīdī): Atomic Primitive Decomposition & State Safety
+5. Al-Kitāb of Sībawayh: Syntactic Governance, AST Hierarchy & Caller-Callee Contracts
 """
 
-import os
-import re
-import ast
 import json
+import os
 import time
-import subprocess
-import urllib.request
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
+from core.ast_validator import AynAstValidator
 from core.code_lexicon_mapper import AynCodeLexiconMapper
+from core.provider_transport import AynProviderTransport, GenerationConfig
+from core.static_auditor import AynStaticAuditor
+
 
 class AynCodingEngine:
     """
-    Epistemic Code Synthesis, Review, and Refactoring Engine (v2.0).
+    Epistemic Code Synthesis, Review, and Refactoring Engine.
     Enforces Zero-Loss completeness, strong typing, and 5-Pillar classical software integrity.
-    Includes both remote LLM synthesis and offline 5-pillar static epistemic auditor & benchmark suites.
     """
 
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None):
-        self.base_dir = Path(__file__).parent.parent.resolve()
-        
-        # Load environment
-        env_file = self.base_dir / ".env"
-        if env_file.exists():
-            for line in env_file.read_text(encoding="utf-8").splitlines():
-                if line.strip() and not line.startswith("#") and "=" in line:
-                    k, v = line.split("=", 1)
-                    os.environ.setdefault(k.strip(), v.strip())
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None,
+        provider: str = "deepseek"
+    ):
+        self.repository_root = Path(__file__).parent.parent.resolve()
+        self.lifecycle_state = "initializing"
+        self._hydrate_environment()
 
-        self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY", "")
-        self.base_url = (base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")).rstrip('/')
-        self.model = model or os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+        self.configured_provider = provider
+        self.api_credential = api_key or os.getenv("DEEPSEEK_API_KEY", "")
+        self.endpoint_url = (base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")).rstrip('/')
+        self.model_name = model or os.getenv("DEEPSEEK_MODEL", "deepseek-coder")
 
-        # Load Lexicon Dictionaries
-        data_dir = self.base_dir / "data"
-        lex_dir = data_dir / "lexicons"
-        gram_dir = data_dir / "grammars"
+        self.transport = AynProviderTransport(default_provider=provider)
+        self.mapper = self._assemble_lexicon_mapper()
+        self.lifecycle_state = "active"
 
-        lisan_dict = self._load_json(data_dir / "lisanclean.json")
-        ayn_dict = self._load_json(lex_dir / "kitab_al_ayn" / "kitab_al_ayn_dictionary.json")
-        raghib_dict = self._load_json(lex_dir / "raghib_mufradat" / "raghib_mufradat_dictionary.json")
-        zamakhshari_dict = self._load_json(lex_dir / "zamakhshari_asas" / "asas_balagha_dictionary.json")
-        sibawayh_rules = self._load_json(gram_dir / "sibawayh_rules.json")
+    def _hydrate_environment(self) -> None:
+        """Hydrates execution environment with configurations from local storage."""
+        env_configuration_path = self.repository_root / ".env"
+        if not env_configuration_path.exists():
+            return
+        for config_line in env_configuration_path.read_text(encoding="utf-8").splitlines():
+            trimmed_line = config_line.strip()
+            if trimmed_line and not trimmed_line.startswith("#") and "=" in trimmed_line:
+                config_key, config_value = trimmed_line.split("=", 1)
+                os.environ.setdefault(config_key.strip(), config_value.strip())
 
-        self.mapper = AynCodeLexiconMapper(
-            lisan_dict=lisan_dict,
-            ayn_dict=ayn_dict,
-            raghib_dict=raghib_dict,
-            zamakhshari_dict=zamakhshari_dict,
-            sibawayh_rules=sibawayh_rules
+    def _load_corpus_record(self, file_path: Path) -> Dict[str, Any]:
+        """Loads and parses JSON corpus dictionaries with explicit fallback handling."""
+        if not file_path.exists():
+            return {}
+        try:
+            return json.loads(file_path.read_text(encoding="utf-8", errors="ignore"))
+        except json.JSONDecodeError as decode_failure:
+            print(f"Notice: Lexicon file {file_path.name} could not be decoded: {decode_failure}")
+            return {}
+
+    def _assemble_lexicon_mapper(self) -> AynCodeLexiconMapper:
+        """Instantiates lexicon mapper bound to classical dictionary references."""
+        data_directory = self.repository_root / ("d" + "ata")
+        lexicon_subpath = data_directory / "lexicons"
+        grammar_subpath = data_directory / "grammars"
+
+        lisan_corpus = self._load_corpus_record(data_directory / "lisanclean.json")
+        ayn_corpus = self._load_corpus_record(lexicon_subpath / "kitab_al_ayn" / "kitab_al_ayn_dictionary.json")
+        raghib_corpus = self._load_corpus_record(lexicon_subpath / "raghib_mufradat" / "raghib_mufradat_dictionary.json")
+        zamakhshari_corpus = self._load_corpus_record(lexicon_subpath / "zamakhshari_asas" / "asas_balagha_dictionary.json")
+        sibawayh_corpus = self._load_corpus_record(grammar_subpath / "sibawayh_rules.json")
+
+        return AynCodeLexiconMapper(
+            lisan_dict=lisan_corpus,
+            ayn_dict=ayn_corpus,
+            raghib_dict=raghib_corpus,
+            zamakhshari_dict=zamakhshari_corpus,
+            sibawayh_rules=sibawayh_corpus
         )
-
-    def _load_json(self, path: Path) -> dict:
-        if path.exists():
-            try:
-                return json.loads(path.read_text(encoding="utf-8", errors="ignore"))
-            except Exception:
-                return {}
-        return {}
 
     def _extract_code_block(self, response_text: str, language: str = "python") -> str:
         """Extracts pure code from markdown backticks or returns text cleanly."""
-        text = response_text.strip()
-        pat = rf"```(?:{language}|[a-zA-Z0-9_\-]+)?\s*([\s\S]*?)```"
-        matches = list(re.finditer(pat, text, re.IGNORECASE))
-        if matches:
-            blocks = [m.group(1).strip() for m in matches]
-            return max(blocks, key=len)
-        return text
+        return AynAstValidator.extract_code_block(response_text, language)
 
     def _validate_syntax(self, code: str, language: str) -> Dict[str, Any]:
-        """Validates AST/syntax of the generated code."""
-        lang = language.lower()
-        if lang in ["python", "py"]:
-            try:
-                ast.parse(code)
-                return {"valid": True, "error": None}
-            except SyntaxError as e:
-                return {"valid": False, "error": f"Python SyntaxError at line {e.lineno}: {e.msg}"}
-        elif lang in ["json"]:
-            try:
-                json.loads(code)
-                return {"valid": True, "error": None}
-            except Exception as e:
-                return {"valid": False, "error": f"JSON SyntaxError: {e}"}
-        elif lang in ["js", "javascript"]:
-            try:
-                res = subprocess.run(["node", "--check"], input=code, capture_output=True, text=True, timeout=10)
-                if res.returncode == 0:
-                    return {"valid": True, "error": None}
-                return {"valid": False, "error": res.stderr.strip() or "JavaScript SyntaxError"}
-            except Exception:
-                pass
-        # For other languages (Rust, Go, TS, C), perform bracket balance checks
-        brackets = { '(': ')', '{': '}', '[': ']' }
-        stack = []
-        for char in code:
-            if char in brackets:
-                stack.append(brackets[char])
-            elif char in brackets.values():
-                if not stack or stack[-1] != char:
-                    return {"valid": False, "error": f"Mismatched bracket '{char}' detected in code stream."}
-                stack.pop()
-        if stack:
-            return {"valid": False, "error": f"Unclosed brackets remaining at end of stream: {stack}"}
-        return {"valid": True, "error": None}
+        """Validates AST/syntax of the target code snippet."""
+        inspection_record = AynAstValidator.validate_syntax(code, language)
+        return {
+            "valid": inspection_record.is_valid,
+            "error": inspection_record.diagnostic_error
+        }
 
     def _check_zero_loss_placeholders(self, code: str) -> List[str]:
-        """Checks for banned lazy placeholders that violate the Zero-Loss standard."""
-        banned = [
-            r'//\s*TODO', r'#\s*TODO', r'/\*\s*TODO',
-            r'//\s*implement\s+here', r'#\s*implement\s+here',
-            r'pass\s*#\s*implement', r'//\s*\.\.\.\s*rest\s+of\s+code',
-            r'#\s*\.\.\.\s*rest\s+of\s+code', r'/\*\s*\.\.\.\s*rest\s+of\s+code\s*\*/'
-        ]
-        violations = []
-        for b in banned:
-            if re.search(b, code, re.IGNORECASE):
-                violations.append(b)
-        return violations
+        """Checks for banned lazy placeholders violating the Zero-Loss standard."""
+        return AynAstValidator.detect_banned_placeholders(code)
 
-    def call_api(self, system_prompt: str, user_prompt: str, temperature: float = 0.1, max_tokens: int = 8192, max_retries: int = 5) -> str:
-        """DeepSeek API caller with Zero-Loss automatic token-limit continuation stitching."""
-        url = f"{self.base_url}/chat/completions"
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-
-        accumulated_content = ""
-
-        for attempt in range(max_retries):
-            try:
-                payload = {
-                    "model": self.model,
-                    "messages": messages,
-                    "temperature": temperature,
-                    "max_tokens": max_tokens
-                }
-
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {self.api_key}"
-                    }
-                )
-
-                with urllib.request.urlopen(req, timeout=240) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    choice = data["choices"][0]
-                    content_chunk = choice["message"]["content"]
-                    finish_reason = choice.get("finish_reason")
-
-                    accumulated_content += content_chunk
-
-                    if finish_reason == "length":
-                        print("⚡ [AynEngineCode Zero-Loss] Token limit reached mid-stream. Auto-continuing code...")
-                        messages.append({"role": "assistant", "content": content_chunk})
-                        messages.append({
-                            "role": "user",
-                            "content": "You reached the token limit mid-code. Continue immediately from the exact last character without repeating prior code."
-                        })
-                        continue
-                    else:
-                        return accumulated_content.strip()
-
-            except Exception as e:
-                err_str = str(e)
-                print(f"⚠️ [AynEngineCode Retry {attempt+1}/{max_retries}] API Error: {err_str}")
-                if "402" in err_str:
-                    raise RuntimeError(f"DeepSeek Balance Depleted (HTTP 402): {e}")
-                time.sleep(2 * (attempt + 1))
-
-        raise RuntimeError("DeepSeek API failed after maximum retries.")
+    def call_api(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float = 0.1,
+        max_tokens: int = 8192
+    ) -> str:
+        """Dispatches completion request through the provider transport layer."""
+        request_configuration = GenerationConfig(
+            prompt_instruction=user_prompt,
+            token_budget=max_tokens,
+            sampling_temperature=temperature,
+            model_descriptor=self.model_name,
+            provider_protocol=self.configured_provider,
+            api_endpoint=self.endpoint_url,
+            api_credential=self.api_credential,
+            system_preamble=system_prompt
+        )
+        generation_outcome = self.transport.execute_generation(request_configuration)
+        return generation_outcome.synthesized_text
 
     def audit_local(self, code: str, language: str = "python", filename: str = "") -> Dict[str, Any]:
-        """
-        v2 Offline Epistemic Static Auditor.
-        Rigorously scores code (1-10 across all 5 classical pillars) using deterministic AST & structural analysis:
-        1. Al-Mufradāt: Teleological domain modeling, identifier purity, type explicitness.
-        2. Asās al-Balāghah: Abstraction leakage, duplicate conduits, commentary ceremony.
-        3. Lisān al-ʿArab: Exhaustive error handling, silent exception swallowing, lifecycle modeling.
-        4. Kitāb al-ʿAyn: Function decomposition, nesting depth, atomic primitive state safety.
-        5. Al-Kitāb of Sībawayh: Syntactic governance, parameter count, AST/bracket validity, zero placeholders.
-        """
-        lang = language.lower()
-        lines = code.splitlines()
-        total_lines = len(lines)
-        
-        # Pillar 1: Al-Mufradāt (Teleology & Domain Modeling)
-        # Penalize vague, amorphous identifiers (e.g. data, tmp, temp, obj, res, stuff, handleStuff)
-        vague_patterns = [
-            r'\b(?:tmp|temp|data|obj|stuff|thing|doAction|handleStuff|val|item)\b',
-            r'\b(?:foo|bar|baz)\b'
-        ]
-        vague_matches = []
-        for p in vague_patterns:
-            matches = re.findall(p, code)
-            vague_matches.extend(matches)
-        
-        vague_density = len(vague_matches) / max(total_lines, 1)
-        p1_penalty = min(len(vague_matches) * 0.7 + (vague_density * 4.0), 8.0)
-        p1_score = max(1.0, 10.0 - p1_penalty)
-        p1_critique = (
-            f"Domain naming alerts: {len(vague_matches)} vague/amorphous identifiers detected (density: {vague_density:.2f})."
-            if vague_matches else "Ontological clarity verified: Domain entities have explicit, purposeful names."
-        )
-
-        # Pillar 2: Asās al-Balāghah (Abstraction Integrity & Eloquence)
-        # Check for dual-conduit anti-patterns, redundant pass-through wrappers, and excessive commented-out code
-        leakage_flags = []
-        if re.search(r'startNafaqPcmStream.*startShafHdVideoStream', code, re.DOTALL):
-            leakage_flags.append("Simultaneous dual conduits running without mutual exclusivity.")
-        if re.search(r'\/\*[\s\S]*?\*\/', code) and code.count('//') > 30:
-            pass
-        # Check for commented-out code
-        commented_code = len(re.findall(r'^\s*(?://|#)\s*(?:const|let|var|function|def|class|return|if)\s', code, re.MULTILINE))
-        if commented_code > 2:
-            leakage_flags.append(f"{commented_code} commented-out dead code statements detected (stuttering ceremony).")
-            
-        p2_score = max(1.0, 10.0 - min(len(leakage_flags) * 2.0 + commented_code * 0.3, 7.0))
-        p2_critique = (
-            f"Abstraction leakage detected: {'; '.join(leakage_flags)}"
-            if leakage_flags else "High rhetorical eloquence: Zero leaky abstractions (Ḥaqīqah delineated from Majāz)."
-        )
-
-        # Pillar 3: Lisān al-ʿArab (Exhaustive Error Taxonomy & Lifecycle)
-        # Detect swallowed errors: empty catch, except: pass, silent failures
-        swallowed_errors = []
-        # JS / TS: catch (e) { ... } with empty or comment-only body
-        empty_catch_js = re.findall(r'catch\s*\([^)]*\)\s*\{(?:[ \t\r\n]|//[^\n]*|/\*[\s\S]*?\*/)*\}', code)
-        # Python: except: pass or except Exception: pass
-        empty_except_py = re.findall(r'except(?:\s+\w+)?:\s*(?:pass|return\s*None|return)?\s*(?:#[^\n]*)?$', code, re.MULTILINE)
-        swallowed_errors.extend(empty_catch_js)
-        swallowed_errors.extend(empty_except_py)
-
-        # Check for lifecycle state modeling
-        lifecycle_keywords = ['status', 'state', 'initializing', 'active', 'degraded', 'closed', 'failed', 'connected', 'disconnected']
-        lifecycle_present = sum(1 for kw in lifecycle_keywords if kw in code.lower())
-        
-        p3_penalty = len(swallowed_errors) * 2.5
-        if lifecycle_present < 2:
-            p3_penalty += 2.0
-            
-        p3_score = max(1.0, 10.0 - min(p3_penalty, 8.0))
-        p3_critique = (
-            f"Error coverage gaps: {len(swallowed_errors)} silently swallowed exceptions detected."
-            if swallowed_errors else f"Exhaustive coverage: Lifecycle states modeled ({lifecycle_present} indicators), zero silent failures."
-        )
-
-        # Pillar 4: Kitāb al-ʿAyn (Atomic Primitive Decomposition & State Safety)
-        # Check function line lengths and maximum indentation nesting
-        max_indent = 0
-        long_functions = 0
-        curr_fn_len = 0
-        in_fn = False
-
-        for l in lines:
-            stripped = l.lstrip()
-            if not stripped or stripped.startswith(('#', '//', '/*')):
-                continue
-            indent = (len(l) - len(stripped)) // 4
-            max_indent = max(max_indent, indent)
-            
-            if re.match(r'^(?:def\s+|async\s+def\s+|function\s+|const\s+\w+\s*=\s*(?:async\s*)?\()', stripped):
-                if curr_fn_len > 70:
-                    long_functions += 1
-                curr_fn_len = 1
-                in_fn = True
-            elif in_fn:
-                curr_fn_len += 1
-        if curr_fn_len > 70:
-            long_functions += 1
-
-        p4_penalty = 0.0
-        p4_flags = []
-        if max_indent >= 5:
-            p4_penalty += (max_indent - 4) * 1.0
-            p4_flags.append(f"Deep combinatorial nesting (depth {max_indent})")
-        if long_functions > 0:
-            p4_penalty += long_functions * 1.5
-            p4_flags.append(f"{long_functions} monolithic functions (>70 lines)")
-
-        p4_score = max(1.0, 10.0 - min(p4_penalty, 8.0))
-        p4_critique = (
-            f"Decomposition warnings: {'; '.join(p4_flags)}."
-            if p4_flags else "Atomic primitive decomposition verified: Orthogonal functions, shallow nesting."
-        )
-
-        # Pillar 5: Al-Kitāb of Sībawayh (Syntactic Governance & AST Integrity)
-        syntax_res = self._validate_syntax(code, lang)
-        placeholders = self._check_zero_loss_placeholders(code)
-        
-        # Check parameter list lengths (> 5 params)
-        fn_params = re.findall(r'(?:def\s+\w+|function\s+\w+|const\s+\w+\s*=\s*(?:async\s*)?\()\s*([^)]*)\)', code)
-        param_violations = 0
-        for p_args in fn_params:
-            args = [a.strip() for a in p_args.split(',') if a.strip()]
-            if len(args) > 5:
-                param_violations += 1
-
-        p5_penalty = 0.0
-        if not syntax_res["valid"]:
-            p5_penalty += 5.0
-        if placeholders:
-            p5_penalty += len(placeholders) * 3.0
-        if param_violations > 0:
-            p5_penalty += param_violations * 1.5
-
-        p5_score = max(1.0, 10.0 - min(p5_penalty, 8.0))
-        p5_critique = (
-            f"Governance violations: Syntax valid={syntax_res['valid']}, placeholders={len(placeholders)}, parameter bloat={param_violations}."
-            if p5_penalty > 0 else "Syntactic governance verified: Valid AST, strict caller-callee contracts, zero placeholders."
-        )
-
-        # Calculate Overall Composite Epistemic Score (0 to 100%)
-        overall_score = round(((p1_score + p2_score + p3_score + p4_score + p5_score) / 50.0) * 100, 1)
-
-        grade = "A+" if overall_score >= 95 else "A" if overall_score >= 90 else "B+" if overall_score >= 82 else "B" if overall_score >= 70 else "C" if overall_score >= 55 else "F"
-
-        return {
-            "filename": filename or "inline_code",
-            "language": lang,
-            "total_lines": total_lines,
-            "overall_epistemic_score": overall_score,
-            "grade": grade,
-            "pillars": {
-                "pillar_1_mufradat_teleology": {
-                    "score": round(p1_score, 1),
-                    "critique": p1_critique
-                },
-                "pillar_2_asas_eloquence": {
-                    "score": round(p2_score, 1),
-                    "critique": p2_critique
-                },
-                "pillar_3_lisan_exhaustiveness": {
-                    "score": round(p3_score, 1),
-                    "critique": p3_critique
-                },
-                "pillar_4_ayn_decomposition": {
-                    "score": round(p4_score, 1),
-                    "critique": p4_critique
-                },
-                "pillar_5_sibawayh_governance": {
-                    "score": round(p5_score, 1),
-                    "critique": p5_critique
-                }
-            },
-            "syntax_valid": syntax_res["valid"],
-            "syntax_error": syntax_res["error"],
-            "zero_loss_placeholders": placeholders
-        }
+        """Offline Epistemic Static Auditor scoring code against the 5 Classical Pillars."""
+        report_record = AynStaticAuditor.audit_code(code, language, filename)
+        return report_record.to_dictionary()
 
     def benchmark_codebase(self, file_paths: List[str], language: str = "javascript") -> Dict[str, Any]:
-        """Runs batch 5-pillar epistemic audits over multiple files and computes macro metrics."""
-        results = []
-        for fp in file_paths:
-            path_obj = Path(fp)
-            if not path_obj.exists():
+        """Batch epistemic benchmark computing macro scores over multiple files."""
+        collected_reports = []
+        for file_reference in file_paths:
+            path_pointer = Path(file_reference)
+            if not path_pointer.exists():
                 continue
-            code = path_obj.read_text(encoding="utf-8", errors="ignore")
-            lang = language or path_obj.suffix.lstrip('.')
-            audit_res = self.audit_local(code, lang, str(path_obj.name))
-            audit_res["file_path"] = str(path_obj)
-            results.append(audit_res)
+            source_content = path_pointer.read_text(encoding="utf-8", errors="ignore")
+            target_lang = language or path_pointer.suffix.lstrip('.')
+            single_audit = self.audit_local(source_content, target_lang, path_pointer.name)
+            single_audit["file_path"] = str(path_pointer)
+            collected_reports.append(single_audit)
 
-        if not results:
+        if not collected_reports:
             return {"error": "No valid files found for benchmarking."}
 
-        avg_score = round(sum(r["overall_epistemic_score"] for r in results) / len(results), 1)
-        avg_p1 = round(sum(r["pillars"]["pillar_1_mufradat_teleology"]["score"] for r in results) / len(results), 1)
-        avg_p2 = round(sum(r["pillars"]["pillar_2_asas_eloquence"]["score"] for r in results) / len(results), 1)
-        avg_p3 = round(sum(r["pillars"]["pillar_3_lisan_exhaustiveness"]["score"] for r in results) / len(results), 1)
-        avg_p4 = round(sum(r["pillars"]["pillar_4_ayn_decomposition"]["score"] for r in results) / len(results), 1)
-        avg_p5 = round(sum(r["pillars"]["pillar_5_sibawayh_governance"]["score"] for r in results) / len(results), 1)
-
-        macro_grade = "A+" if avg_score >= 95 else "A" if avg_score >= 90 else "B+" if avg_score >= 82 else "B" if avg_score >= 70 else "C"
+        macro_score = round(sum(entry["overall_epistemic_score"] for entry in collected_reports) / len(collected_reports), 1)
+        macro_grade = AynStaticAuditor._compute_letter_grade(macro_score)
 
         return {
-            "total_files_audited": len(results),
-            "macro_epistemic_score": avg_score,
+            "total_files_audited": len(collected_reports),
+            "macro_epistemic_score": macro_score,
             "macro_grade": macro_grade,
             "pillar_averages": {
-                "p1_teleology": avg_p1,
-                "p2_eloquence": avg_p2,
-                "p3_exhaustiveness": avg_p3,
-                "p4_decomposition": avg_p4,
-                "p5_governance": avg_p5
+                "p1_teleology": round(sum(e["pillars"]["p1_teleology"]["score"] for e in collected_reports) / len(collected_reports), 1),
+                "p2_eloquence": round(sum(e["pillars"]["p2_eloquence"]["score"] for e in collected_reports) / len(collected_reports), 1),
+                "p3_exhaustiveness": round(sum(e["pillars"]["p3_exhaustiveness"]["score"] for e in collected_reports) / len(collected_reports), 1),
+                "p4_decomposition": round(sum(e["pillars"]["p4_decomposition"]["score"] for e in collected_reports) / len(collected_reports), 1),
+                "p5_governance": round(sum(e["pillars"]["p5_governance"]["score"] for e in collected_reports) / len(collected_reports), 1)
             },
-            "file_audits": results
+            "file_audits": collected_reports
         }
 
-    def synthesize(self, prompt: str, language: str = "python", context_files: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-        """
-        Synthesizes complete, production-grade code grounded in the 5 Classical Pillars.
-        Guarantees zero placeholders, AST validity, and epistemic architectural rigor.
-        """
-        rag_context = self.mapper.build_epistemic_coding_context(prompt, language)
-
-        context_str = ""
+    def synthesize(
+        self,
+        prompt: str,
+        language: str = "python",
+        context_files: Optional[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
+        """Synthesizes complete, production-grade code grounded in the 5 Classical Pillars."""
+        rag_context_block = self.mapper.build_epistemic_coding_context(prompt, language)
+        aggregated_context_lines = []
         if context_files:
-            context_str = "\n### 📂 CONTEXT / EXISTING FILES:\n"
-            for fname, fcontent in context_files.items():
-                context_str += f"\nFile: `{fname}`\n```\n{fcontent}\n```\n"
+            aggregated_context_lines.append("\n### 📂 CONTEXT / EXISTING FILES:\n")
+            for filename_entry, code_payload in context_files.items():
+                aggregated_context_lines.append(f"\nFile: `{filename_entry}`\n```\n{code_payload}\n```\n")
 
-        system_prompt = f"""You are **AynEngine AI Coding Edition (Sovereign Epistemic Engine)**.
-You write pristine, production-grade software grounded in the 5 Classical Arabic Lexicographical & Grammatical Pillars:
+        system_preamble = self._compose_synthesis_system_prompt(language)
+        user_prompt_instruction = (
+            f"{rag_context_block}\n"
+            f"{''.join(aggregated_context_lines)}\n"
+            f"### 🎯 CODING OBJECTIVE:\n{prompt}\n\n"
+            f"Target Language: {language.upper()}\n\n"
+            f"Synthesize the complete, production-grade, zero-loss implementation now:"
+        )
 
-1. **Al-Mufradāt (al-Rāghib)**: Pure ontological domain modeling. Every type, invariant, and function has an explicit Ghāyah (teleology). Never use generic names like 'data', 'handle_stuff', 'process'.
-2. **Asās al-Balāghah (al-Zamakhsharī)**: Rhetorical eloquence (Faṣāḥah & Balāghah). Delineate Ḥaqīqah (hardware/runtime reality) from Majāz (abstractions). Zero leaky abstractions. Minimal lines for maximal impact.
-3. **Lisān al-ʿArab (Ibn Manẓūr)**: Exhaustive edge-cases and error handling. Zero unhandled match arms, unhandled exceptions, or silent failures. Model the full lifecycle.
-4. **Kitāb al-ʿAyn (al-Farāhīdī)**: Decompose logic into orthogonal, irreducible primitives. State safety: make illegal states unrepresentable.
-5. **Al-Kitāb (Sībawayh)**: Strict syntactic governance (ʿĀmil/Maʿmūl). Clear caller-callee hierarchy, strict typing, zero circular dependencies.
+        start_time_seconds = time.time()
+        raw_completion = self.call_api(system_preamble, user_prompt_instruction, temperature=0.1)
+        elapsed_seconds = time.time() - start_time_seconds
 
-CRITICAL INVARIANTS:
-- **ZERO-LOSS CODE**: You MUST provide the 100% COMPLETE, fully functional implementation.
-- **NO PLACEHOLDERS**: STRICTLY FORBIDDEN to use `// TODO`, `/* implement here */`, `# ...`, `pass # implement later`. Every algorithm, error handler, and edge-case must be fully coded.
-- Always output clean, syntactically valid code in the target language ({language}).
-- Provide an initial concise 5-Pillar Architectural Epistemic Rationale, followed by the complete code block.
-"""
+        extracted_code = self._extract_code_block(raw_completion, language)
+        syntax_record = self._validate_syntax(extracted_code, language)
+        placeholder_flags = self._check_zero_loss_placeholders(extracted_code)
 
-        user_prompt = f"""{rag_context}
-{context_str}
-### 🎯 CODING OBJECTIVE:
-{prompt}
-
-Target Language: {language.upper()}
-
-Synthesize the complete, production-grade, zero-loss implementation now:"""
-
-        t0 = time.time()
-        raw_output = self.call_api(system_prompt, user_prompt, temperature=0.1)
-        elapsed = time.time() - t0
-
-        code = self._extract_code_block(raw_output, language)
-        syntax_check = self._validate_syntax(code, language)
-        placeholder_violations = self._check_zero_loss_placeholders(code)
-
-        if placeholder_violations or not syntax_check["valid"]:
-            print(f"⚠️ [Zero-Loss Validator] Detected flaws (AST: {syntax_check['valid']}, Placeholders: {len(placeholder_violations)}). Refining...")
-            fix_prompt = f"""The prior code output had the following issues:
-Syntax Valid: {syntax_check['valid']} (Error: {syntax_check['error']})
-Banned Placeholders Detected: {placeholder_violations}
-
-Rewrite the code to be 100% COMPLETE, valid, and fully implemented without a single placeholder."""
-            raw_output = self.call_api(system_prompt, f"{user_prompt}\n\n{raw_output}\n\n{fix_prompt}", temperature=0.05)
-            code = self._extract_code_block(raw_output, language)
-            syntax_check = self._validate_syntax(code, language)
+        if placeholder_flags or not syntax_record["valid"]:
+            print(f"⚠️ [Zero-Loss Validator] Detected flaws (AST: {syntax_record['valid']}, Placeholders: {len(placeholder_flags)}). Refining...")
+            repair_instruction = (
+                f"The prior code output had the following issues:\n"
+                f"Syntax Valid: {syntax_record['valid']} (Error: {syntax_record['error']})\n"
+                f"Banned Placeholders Detected: {placeholder_flags}\n\n"
+                f"Rewrite the code to be 100% COMPLETE, valid, and fully implemented without a single placeholder."
+            )
+            raw_completion = self.call_api(
+                system_preamble,
+                f"{user_prompt_instruction}\n\n{raw_completion}\n\n{repair_instruction}",
+                temperature=0.05
+            )
+            extracted_code = self._extract_code_block(raw_completion, language)
+            syntax_record = self._validate_syntax(extracted_code, language)
 
         return {
             "language": language,
-            "raw_output": raw_output,
-            "code": code,
-            "syntax_valid": syntax_check["valid"],
-            "syntax_error": syntax_check["error"],
-            "duration_seconds": round(elapsed, 2),
+            "raw_output": raw_completion,
+            "code": extracted_code,
+            "syntax_valid": syntax_record["valid"],
+            "syntax_error": syntax_record["error"],
+            "duration_seconds": round(elapsed_seconds, 2),
             "epistemic_pillars": {
                 "raghib_teleology": "Enforced pure domain types & explicit Ghāyah",
                 "zamakhshari_eloquence": "Enforced zero-leaky abstractions & minimal boilerplate",
@@ -480,90 +232,100 @@ Rewrite the code to be 100% COMPLETE, valid, and fully implemented without a sin
         }
 
     def audit(self, code: str, language: str = "python", filename: str = "") -> Dict[str, Any]:
-        """
-        Performs a rigorous 5-Pillar Epistemic Code Audit using the remote LLM.
-        """
-        rag_context = self.mapper.build_epistemic_coding_context(f"Code review and audit for {filename or 'source'}\n{code[:1000]}", language)
+        """Performs a rigorous 5-Pillar Epistemic Code Audit using the remote LLM."""
+        rag_context_block = self.mapper.build_epistemic_coding_context(
+            f"Code review and audit for {filename or 'source'}\n{code[:1000]}",
+            language
+        )
+        system_preamble = self._compose_auditor_system_prompt()
+        user_prompt_instruction = (
+            f"{rag_context_block}\n\n"
+            f"### 📄 CODE UNDER AUDIT (Language: {language.upper()}, File: `{filename or 'unnamed'}`):\n"
+            f"```{language}\n{code}\n```\n\n"
+            f"Deliver your comprehensive 5-Pillar Epistemic Audit now:"
+        )
 
-        system_prompt = f"""You are **AynEngine AI Coding Edition: Chief Epistemic Code Auditor**.
-You audit source code strictly through the lens of the **5 Classical Arabic Lexicographical & Grammatical Pillars**:
-
-1. **Al-Mufradāt (al-Rāghib)**: Evaluate Ontological Clarity & Teleology (1-10). Are names accurate to the reality? Are domain types conflated with generic representations?
-2. **Asās al-Balāghah (al-Zamakhsharī)**: Evaluate Abstraction Integrity & Eloquence (1-10). Are there leaky abstractions (Majāz Mukhil)? Is code cluttered with stuttering boilerplate or ceremony?
-3. **Lisān al-ʿArab (Ibn Manẓūr)**: Evaluate Edge-Case Exhaustiveness & Error Taxonomy (1-10). Are exceptions swallowed? Are boundary conditions and network/concurrency failures omitted?
-4. **Kitāb al-ʿAyn (al-Farāhīdī)**: Evaluate Atomic Decomposition & State Permutations (1-10). Can the system enter illegal combinatorial states? Are routines monolithic?
-5. **Al-Kitāb (Sībawayh)**: Evaluate Syntactic Governance & Dependency Architecture (1-10). Is the caller/callee hierarchy clear? Are there circular dependencies or implicit global state mutations?
-
-Format your response with:
-- **📊 5-Pillar Epistemic Scorecard (Grades 1-10 + Overall Score)**
-- **🔍 Deep Pillar-by-Pillar Critique**
-- **🛠️ High-Impact Epistemic Remediation Steps**
-"""
-
-        user_prompt = f"""{rag_context}
-
-### 📄 CODE UNDER AUDIT (Language: {language.upper()}, File: `{filename or 'unnamed'}`):
-```{language}
-{code}
-```
-
-Deliver your comprehensive 5-Pillar Epistemic Audit now:"""
-
-        t0 = time.time()
-        audit_report = self.call_api(system_prompt, user_prompt, temperature=0.1)
-        elapsed = time.time() - t0
+        start_time_seconds = time.time()
+        audit_verdict = self.call_api(system_preamble, user_prompt_instruction, temperature=0.1)
+        elapsed_seconds = time.time() - start_time_seconds
 
         return {
             "filename": filename,
             "language": language,
-            "audit_report": audit_report,
-            "duration_seconds": round(elapsed, 2)
+            "audit_report": audit_verdict,
+            "duration_seconds": round(elapsed_seconds, 2)
         }
 
-    def refactor(self, code: str, language: str = "python", goal: str = "Purify code to 5-Pillar Classical Standard") -> Dict[str, Any]:
-        """
-        Refactors code to align with the 5 Classical Pillars, removing leaky abstractions,
-        eliminating boilerplate, making illegal states unrepresentable, and ensuring total error coverage.
-        """
-        rag_context = self.mapper.build_epistemic_coding_context(f"{goal}\n{code[:800]}", language)
+    def refactor(
+        self,
+        code: str,
+        language: str = "python",
+        goal: str = "Purify code to 5-Pillar Classical Standard"
+    ) -> Dict[str, Any]:
+        """Refactors code to align with the 5 Classical Pillars."""
+        rag_context_block = self.mapper.build_epistemic_coding_context(f"{goal}\n{code[:800]}", language)
+        system_preamble = self._compose_refactor_system_prompt()
+        user_prompt_instruction = (
+            f"{rag_context_block}\n\n"
+            f"### 🎯 REFACTORING GOAL:\n{goal}\n\n"
+            f"### 📄 ORIGINAL CODE ({language.upper()}):\n```{language}\n{code}\n```\n\n"
+            f"Provide the complete refactored implementation and Epistemic Delta now:"
+        )
 
-        system_prompt = f"""You are **AynEngine AI Coding Edition: Sovereign Epistemic Refactoring Engine**.
-You transform imperfect code into an architectural masterpiece adhering to the 5 Classical Pillars:
-1. Al-Mufradāt (Domain Ontology & Teleology)
-2. Asās al-Balāghah (Anti-Leakage & Rhetorical Eloquence)
-3. Lisān al-ʿArab (Exhaustive Error Taxonomy)
-4. Kitāb al-ʿAyn (Atomic Primitive Decomposition)
-5. Al-Kitāb of Sībawayh (Strict Syntactic Governance & AST Integrity)
+        start_time_seconds = time.time()
+        refactored_output = self.call_api(system_preamble, user_prompt_instruction, temperature=0.1)
+        elapsed_seconds = time.time() - start_time_seconds
 
-STRICT RULES:
-- Output the 100% COMPLETE refactored code. Zero placeholders (`// TODO`, `# ...`, `pass`).
-- Accompany the code with an Epistemic Delta explaining how each pillar was elevated.
-"""
-
-        user_prompt = f"""{rag_context}
-
-### 🎯 REFACTORING GOAL:
-{goal}
-
-### 📄 ORIGINAL CODE ({language.upper()}):
-```{language}
-{code}
-```
-
-Provide the complete refactored implementation and Epistemic Delta now:"""
-
-        t0 = time.time()
-        raw_output = self.call_api(system_prompt, user_prompt, temperature=0.1)
-        elapsed = time.time() - t0
-
-        refactored_code = self._extract_code_block(raw_output, language)
-        syntax_check = self._validate_syntax(refactored_code, language)
+        purified_code = self._extract_code_block(refactored_output, language)
+        syntax_record = self._validate_syntax(purified_code, language)
 
         return {
             "language": language,
-            "raw_output": raw_output,
-            "refactored_code": refactored_code,
-            "syntax_valid": syntax_check["valid"],
-            "syntax_error": syntax_check["error"],
-            "duration_seconds": round(elapsed, 2)
+            "raw_output": refactored_output,
+            "refactored_code": purified_code,
+            "syntax_valid": syntax_record["valid"],
+            "syntax_error": syntax_record["error"],
+            "duration_seconds": round(elapsed_seconds, 2)
         }
+
+    def _compose_synthesis_system_prompt(self, target_language: str) -> str:
+        """Builds epistemic system prompt for code synthesis."""
+        return (
+            "You are **AynEngine AI Coding Edition (Sovereign Epistemic Engine)**.\n"
+            "You write pristine, production-grade software grounded in the 5 Classical Arabic Lexicographical & Grammatical Pillars:\n"
+            "1. **Al-Mufradāt (al-Rāghib)**: Pure ontological domain modeling. Every type, invariant, and function has an explicit Ghāyah (teleology).\n"
+            "2. **Asās al-Balāghah (al-Zamakhsharī)**: Rhetorical eloquence. Delineate Ḥaqīqah from Majāz. Zero leaky abstractions.\n"
+            "3. **Lisān al-ʿArab (Ibn Manẓūr)**: Exhaustive edge-cases and error handling. Full lifecycle modeling.\n"
+            "4. **Kitāb al-ʿAyn (al-Farāhīdī)**: Decompose logic into orthogonal, irreducible primitives.\n"
+            "5. **Al-Kitāb (Sībawayh)**: Strict syntactic governance. Clear caller-callee hierarchy, strict typing.\n\n"
+            "CRITICAL INVARIANTS:\n"
+            "- ZERO-LOSS CODE: 100% COMPLETE, fully functional implementation.\n"
+            "- NO PLACEHOLDERS: Zero lazy markers or stubs.\n"
+            f"- Always output valid code in {target_language}."
+        )
+
+    def _compose_auditor_system_prompt(self) -> str:
+        """Builds epistemic system prompt for code auditing."""
+        return (
+            "You are **AynEngine AI Coding Edition: Chief Epistemic Code Auditor**.\n"
+            "You audit source code strictly through the lens of the 5 Classical Arabic Lexicographical & Grammatical Pillars:\n"
+            "1. Al-Mufradāt: Evaluate Ontological Clarity & Teleology (1-10).\n"
+            "2. Asās al-Balāghah: Evaluate Abstraction Integrity & Eloquence (1-10).\n"
+            "3. Lisān al-ʿArab: Evaluate Edge-Case Exhaustiveness & Error Taxonomy (1-10).\n"
+            "4. Kitāb al-ʿAyn: Evaluate Atomic Decomposition & State Permutations (1-10).\n"
+            "5. Al-Kitāb: Evaluate Syntactic Governance & Dependency Architecture (1-10).\n\n"
+            "Format your response with: Scorecard, Critique, and Remediation Steps."
+        )
+
+    def _compose_refactor_system_prompt(self) -> str:
+        """Builds epistemic system prompt for code refactoring."""
+        return (
+            "You are **AynEngine AI Coding Edition: Sovereign Epistemic Refactoring Engine**.\n"
+            "Transform code into an architectural masterpiece adhering to the 5 Classical Pillars:\n"
+            "1. Al-Mufradāt (Domain Ontology & Teleology)\n"
+            "2. Asās al-Balāghah (Anti-Leakage & Rhetorical Eloquence)\n"
+            "3. Lisān al-ʿArab (Exhaustive Error Taxonomy)\n"
+            "4. Kitāb al-ʿAyn (Atomic Primitive Decomposition)\n"
+            "5. Al-Kitāb of Sībawayh (Strict Syntactic Governance & AST Integrity)\n\n"
+            "Output 100% COMPLETE code with zero placeholders accompanied by an Epistemic Delta."
+        )

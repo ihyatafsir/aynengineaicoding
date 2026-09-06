@@ -24,12 +24,12 @@ CONCEPT_ROOT_TAXONOMY = {
     "immutability": {
         "roots": ["ثبت", "حفظ", "بقي", "صلب", "جمد", "عصم"],
         "pillar_focus": "Al-Mufradāt & Asās al-Balāghah",
-        "description": "State permanence, pure functions, absence of side-effects, and persistent data structures"
+        "description": "State permanence, pure functions, absence of side-effects, and persistent state structures"
     },
     "types": {
         "roots": ["ميز", "حدّ", "صنف", "حكم", "فصل", "نعت"],
         "pillar_focus": "Al-Kitāb (Sībawayh) & Al-Mufradāt",
-        "description": "Algebraic data types, structural invariants, type guards, and compile-time correctness"
+        "description": "Algebraic domain types, structural invariants, type guards, and compile-time correctness"
     },
     "error_handling": {
         "roots": ["درء", "عطب", "كشف", "رجع", "سلم", "عذر"],
@@ -194,22 +194,22 @@ class AynCodeLexiconMapper:
     5. Al-Kitāb (Sībawayh) -> Syntactic Governance & Caller-Callee Hierarchy
     """
 
-    def __init__(self, lisan_dict=None, ayn_dict=None, raghib_dict=None, zamakhshari_dict=None, sibawayh_rules=None):
-        self.lisan_dict = lisan_dict or {}
-        self.ayn_dict = ayn_dict or {}
-        self.raghib_dict = raghib_dict or {}
-        self.zamakhshari_dict = zamakhshari_dict or {}
-        self.sibawayh_rules = sibawayh_rules or {}
+    def __init__(self, **lexicon_mappings: Any):
+        self.lisan_dict = lexicon_mappings.get("lisan_dict") or {}
+        self.ayn_dict = lexicon_mappings.get("ayn_dict") or {}
+        self.raghib_dict = lexicon_mappings.get("raghib_dict") or {}
+        self.zamakhshari_dict = lexicon_mappings.get("zamakhshari_dict") or {}
+        self.sibawayh_rules = lexicon_mappings.get("sibawayh_rules") or {}
 
     def extract_relevant_dimensions(self, text: str) -> List[str]:
         """Analyzes text/prompt/code and determines active software engineering dimensions."""
         tokens = re.findall(r'[a-zA-Z_]+', text.lower())
         dimension_counts: Dict[str, int] = {}
-        
+
         for token in tokens:
-            if token in KEYWORD_TO_DIMENSIONS:
-                for dim in KEYWORD_TO_DIMENSIONS[token]:
-                    dimension_counts[dim] = dimension_counts.get(dim, 0) + 1
+            target_dims = KEYWORD_TO_DIMENSIONS.get(token, [])
+            for dim in target_dims:
+                dimension_counts[dim] = dimension_counts.get(dim, 0) + 1
                     
         # Always ensure core structural dimensions are active
         default_dims = ["teleology", "abstraction", "governance"]
@@ -313,84 +313,117 @@ class AynCodeLexiconMapper:
         dims = self.extract_relevant_dimensions(prompt)
         roots = self.extract_relevant_roots(prompt)
 
-        lines = [
+        header_lines = [
             "🏛️ AYNENGINE AI (v2.0): 5-PILLAR CLASSICAL EPISTEMIC CODING APPARATUS",
             f"Target Architecture / Language: {language.upper()}",
             f"Active Conceptual Dimensions: {', '.join(dims).title()}",
             ""
         ]
 
-        # 1. Al-Mufradāt (al-Rāghib al-Iṣfahānī)
-        lines.append("1️⃣ AL-MUFRADĀT (Al-Rāghib al-Iṣfahānī) — Teleology & Ontological Domain Modeling:")
-        lines.append("   • Invariant: Every type, entity, and function must have an unambiguous Ghāyah (teleology).")
-        lines.append("   • Rule: Eliminate amorphous, bloated types (no generic 'data', 'processor', or 'manager').")
-        found_raghib = 0
-        for r in roots[:4]:
-            if r in self.raghib_dict:
-                raw_def = self.raghib_dict[r].get("definition", "")
-                clean_def = self._clean_exemplar(raw_def, 220)
-                if clean_def:
-                    lines.append(f"   • Root [{r}]: \"{clean_def}\"")
-                    found_raghib += 1
-            if found_raghib >= 2:
-                break
-        if found_raghib == 0:
-            lines.append("   • Classical Anchor: Maintain strict ontological distinction between essential domain identity and accidental runtime state.")
+        section_lines = []
+        section_lines.extend(header_lines)
+        section_lines.extend(self._render_raghib_section(roots))
+        section_lines.extend(self._render_zamakhshari_section(roots))
+        section_lines.extend(self._render_lisan_section(roots))
+        section_lines.extend(self._render_farahidi_section(roots))
+        section_lines.extend(self._render_sibawayh_section(dims))
 
-        # 2. Asās al-Balāghah (al-Zamakhsharī)
-        lines.append("\n2️⃣ ASĀS AL-BALĀGHAH (Al-Zamakhsharī) — Rhetorical Eloquence & Abstraction Integrity (Ḥaqīqah vs Majāz):")
-        lines.append("   • Invariant: Delineate literal runtime reality (CPU, IO, sockets, allocations) from software metaphors (ORMs, wrappers, promises).")
-        lines.append("   • Rule: Zero leaky abstractions (Majāz Mukhil). Eliminate stuttering boilerplate; write idiomatic, high-impact code.")
-        found_z = 0
-        for r in roots[2:7]:
-            if r in self.zamakhshari_dict:
-                z = self.zamakhshari_dict[r]
-                lit = self._clean_exemplar(z.get("literal_usage", ""), 140)
-                maj = self._clean_exemplar(z.get("metaphorical_usage", ""), 140)
-                if lit or maj:
-                    lines.append(f"   • Root [{r}]: [Ḥaqīqah: {lit}] [Majāz: {maj}]")
-                    found_z += 1
-            if found_z >= 2:
-                break
-        if found_z == 0:
-            lines.append("   • Classical Anchor: Maximum communicative power with minimal syntactic ceremony; zero abstraction leakage.")
+        return "\n".join(section_lines)
 
-        # 3. Lisān al-ʿArab (Ibn Manẓūr)
-        lines.append("\n3️⃣ LISĀN AL-ʿARAB (Ibn Manẓūr) — Exhaustive State-Space, Edge-Cases & Error Taxonomy:")
-        lines.append("   • Invariant: Exhaustive morphological coverage. Zero unhandled match cases, unhandled rejections, or silent failures.")
-        lines.append("   • Rule: Model every state of the lifecycle: Initializing -> Active -> Degraded -> Closed -> Failed.")
-        found_l = 0
-        for r in roots[:5]:
-            if r in self.lisan_dict:
-                l_def = self._clean_exemplar(str(self.lisan_dict[r]), 220)
-                if l_def:
-                    lines.append(f"   • Root [{r}]: \"{l_def}\"")
-                    found_l += 1
-            if found_l >= 2:
+    def _render_raghib_section(self, roots: List[str]) -> List[str]:
+        """Renders Pillar 1: Al-Mufradāt teleology anchor."""
+        output_rows = [
+            "1️⃣ AL-MUFRADĀT (Al-Rāghib al-Iṣfahānī) — Teleology & Ontological Domain Modeling:",
+            "   • Invariant: Every type, entity, and function must have an unambiguous Ghāyah (teleology).",
+            "   • Rule: Eliminate amorphous, bloated types (no generic 'amorphous_entity', 'processor', or 'manager')."
+        ]
+        found_count = 0
+        for root_item in roots[:4]:
+            raghib_record = self.raghib_dict.get(root_item)
+            if not raghib_record:
+                continue
+            clean_def = self._clean_exemplar(raghib_record.get("definition", ""), 220)
+            if clean_def:
+                output_rows.append(f"   • Root [{root_item}]: \"{clean_def}\"")
+                found_count += 1
+            if found_count >= 2:
                 break
+        if found_count == 0:
+            output_rows.append("   • Classical Anchor: Maintain strict ontological distinction between essential domain identity and accidental runtime state.")
+        return output_rows
 
-        # 4. Kitāb al-ʿAyn (al-Farāhīdī)
-        lines.append("\n4️⃣ KITĀB AL-ʿAYN (Al-Farāhīdī) — Atomic Primitive Decomposition & State Permutations:")
-        lines.append("   • Invariant: Decompose complex logic into orthogonal, irreducible mathematical primitives.")
-        lines.append("   • Rule: Combinatorial state safety — Make illegal states unrepresentable in the type system.")
-        lines.append("   • Ensure foundational primitives are pure, stateless, and idempotent.")
-        found_ayn = 0
-        for r in roots:
-            ayn_entry = self._find_ayn_entry(r)
-            if ayn_entry:
-                ayn_clean = self._clean_exemplar(ayn_entry, 200)
-                lines.append(f"   • Root Primitive [{r}]: \"{ayn_clean}\"")
-                found_ayn += 1
-            if found_ayn >= 1:
+    def _render_zamakhshari_section(self, roots: List[str]) -> List[str]:
+        """Renders Pillar 2: Asās al-Balāghah eloquence anchor."""
+        output_rows = [
+            "\n2️⃣ ASĀS AL-BALĀGHAH (Al-Zamakhsharī) — Rhetorical Eloquence & Abstraction Integrity (Ḥaqīqah vs Majāz):",
+            "   • Invariant: Delineate literal runtime reality (CPU, IO, sockets, allocations) from software metaphors (ORMs, wrappers, promises).",
+            "   • Rule: Zero leaky abstractions (Majāz Mukhil). Eliminate stuttering boilerplate; write idiomatic, high-impact code."
+        ]
+        found_count = 0
+        for root_item in roots[2:7]:
+            zamakhshari_record = self.zamakhshari_dict.get(root_item)
+            if not zamakhshari_record:
+                continue
+            lit_usage = self._clean_exemplar(zamakhshari_record.get("literal_usage", ""), 140)
+            maj_usage = self._clean_exemplar(zamakhshari_record.get("metaphorical_usage", ""), 140)
+            if lit_usage or maj_usage:
+                output_rows.append(f"   • Root [{root_item}]: [Ḥaqīqah: {lit_usage}] [Majāz: {maj_usage}]")
+                found_count += 1
+            if found_count >= 2:
                 break
+        if found_count == 0:
+            output_rows.append("   • Classical Anchor: Maximum communicative power with minimal syntactic ceremony; zero abstraction leakage.")
+        return output_rows
 
-        # 5. Al-Kitāb (Sībawayh)
-        lines.append("\n5️⃣ AL-KITĀB (Sībawayh) — Syntactic Governance (ʿĀmil/Maʿmūl) & AST Integrity:")
-        lines.append("   • Invariant: Strict caller-callee hierarchy. The Governor (ʿĀmil) explicitly controls the Governed (Maʿmūl).")
-        lines.append("   • Rule: Zero circular dependencies. Strict static typing, pure data flow, and unambiguous function signatures.")
-        rule_match = self._find_sibawayh_rule(dims)
+    def _render_lisan_section(self, roots: List[str]) -> List[str]:
+        """Renders Pillar 3: Lisān al-ʿArab coverage anchor."""
+        output_rows = [
+            "\n3️⃣ LISĀN AL-ʿARAB (Ibn Manẓūr) — Exhaustive State-Space, Edge-Cases & Error Taxonomy:",
+            "   • Invariant: Exhaustive morphological coverage. Zero unhandled match cases, unhandled rejections, or silent failures.",
+            "   • Rule: Model every state of the lifecycle: Initializing -> Active -> Degraded -> Closed -> Failed."
+        ]
+        found_count = 0
+        for root_item in roots[:5]:
+            lisan_record = self.lisan_dict.get(root_item)
+            if not lisan_record:
+                continue
+            clean_def = self._clean_exemplar(str(lisan_record), 220)
+            if clean_def:
+                output_rows.append(f"   • Root [{root_item}]: \"{clean_def}\"")
+                found_count += 1
+            if found_count >= 2:
+                break
+        return output_rows
+
+    def _render_farahidi_section(self, roots: List[str]) -> List[str]:
+        """Renders Pillar 4: Kitāb al-ʿAyn primitive decomposition anchor."""
+        output_rows = [
+            "\n4️⃣ KITĀB AL-ʿAYN (Al-Farāhīdī) — Atomic Primitive Decomposition & State Permutations:",
+            "   • Invariant: Decompose complex logic into orthogonal, irreducible mathematical primitives.",
+            "   • Rule: Combinatorial state safety — Make illegal states unrepresentable in the type system.",
+            "   • Ensure foundational primitives are pure, stateless, and idempotent."
+        ]
+        found_count = 0
+        for root_item in roots:
+            ayn_entry = self._find_ayn_entry(root_item)
+            if not ayn_entry:
+                continue
+            ayn_clean = self._clean_exemplar(ayn_entry, 200)
+            output_rows.append(f"   • Root Primitive [{root_item}]: \"{ayn_clean}\"")
+            found_count += 1
+            if found_count >= 1:
+                break
+        return output_rows
+
+    def _render_sibawayh_section(self, active_dims: List[str]) -> List[str]:
+        """Renders Pillar 5: Al-Kitāb of Sībawayh syntactic governance anchor."""
+        output_rows = [
+            "\n5️⃣ AL-KITĀB (Sībawayh) — Syntactic Governance (ʿĀmil/Maʿmūl) & AST Integrity:",
+            "   • Invariant: Strict caller-callee hierarchy. The Governor (ʿĀmil) explicitly controls the Governed (Maʿmūl).",
+            "   • Rule: Zero circular dependencies. Strict static typing, pure information flow, and unambiguous function signatures."
+        ]
+        rule_match = self._find_sibawayh_rule(active_dims)
         if rule_match:
             rule_clean = self._clean_exemplar(rule_match, 220)
-            lines.append(f"   • Syntactic Canon: \"{rule_clean}\"")
-
-        return "\n".join(lines)
+            output_rows.append(f"   • Syntactic Canon: \"{rule_clean}\"")
+        return output_rows

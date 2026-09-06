@@ -30,7 +30,7 @@ RAGHIB_MUFRADAT_PATH = resolve_path("lexicons/raghib_mufradat/raghib_mufradat_di
 ZAMAKHSHARI_ASAS_PATH = resolve_path("lexicons/zamakhshari_asas/asas_balagha_dictionary.json")
 SIBAWAYH_RULES_PATH = resolve_path("grammars/sibawayh_rules.json")
 
-# LLM & DeepSeek Configuration
+# LLM & Multi-Provider Configuration
 env_file = BASE_DIR / ".env"
 if env_file.exists():
     for line in env_file.read_text(encoding="utf-8").splitlines():
@@ -38,6 +38,16 @@ if env_file.exists():
             k, v = line.split("=", 1)
             os.environ.setdefault(k.strip(), v.strip())
 
+DEFAULT_PROVIDER = os.getenv("AYN_PROVIDER", "deepseek")
+
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-coder")
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-coder")
+
