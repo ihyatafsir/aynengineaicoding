@@ -83,8 +83,8 @@ class AynStaticAuditor:
 
     # Dynamic regex assembly prevents the auditor source from matching its own evaluation rules
     _VAGUE_IDENTIFIERS = [
-        r'\b(?:' + '|'.join([
-            't' + 'mp', 'te' + 'mp', 'da' + 'ta', 'ob' + 'j', 'stu' + 'ff',
+        r'(?<!/)\b(?:' + '|'.join([
+            't' + 'mp', 'te' + 'mp', 'da' + 'ta(?![-\\:=/])', 'ob' + 'j', 'stu' + 'ff',
             'thi' + 'ng', 'do' + 'Action', 'handle' + 'Stuff', 'va' + 'l', 'it' + 'em'
         ]) + r')\b',
         r'\b(?:' + '|'.join(['f' + 'oo', 'ba' + 'r', 'ba' + 'z']) + r')\b'
