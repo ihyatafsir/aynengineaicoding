@@ -104,9 +104,9 @@ class AynProviderTransport:
     }
 
     DEFAULT_MODELS: Dict[str, str] = {
-        "deepseek": "deepseek-coder",
-        "openai": "gpt-4o",
-        "ollama": "deepseek-coder",
+        "deepseek": os.getenv("DEEPSEEK_MODEL", "deepseek-coder"),
+        "openai": os.getenv("OPENAI_MODEL", "gpt-4o"),
+        "ollama": os.getenv("OLLAMA_MODEL", "ayncoding-model"),
         "offline": "ayn-deterministic-v1"
     }
 

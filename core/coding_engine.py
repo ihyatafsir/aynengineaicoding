@@ -16,6 +16,7 @@ Grounding Pillars:
 
 import json
 import os
+import re
 import time
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -44,9 +45,18 @@ class AynCodingEngine:
         self._hydrate_environment()
 
         self.configured_provider = provider
-        self.api_credential = api_key or os.getenv("DEEPSEEK_API_KEY", "")
-        self.endpoint_url = (base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")).rstrip('/')
-        self.model_name = model or os.getenv("DEEPSEEK_MODEL", "deepseek-coder")
+        if provider == "ollama":
+            self.api_credential = api_key or os.getenv("OLLAMA_API_KEY", "")
+            self.endpoint_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1/chat/completions")
+            self.model_name = model or os.getenv("OLLAMA_MODEL", "ayncoding-model")
+        elif provider == "openai":
+            self.api_credential = api_key or os.getenv("OPENAI_API_KEY", "")
+            self.endpoint_url = base_url or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1/chat/completions")
+            self.model_name = model or os.getenv("OPENAI_MODEL", "gpt-4o")
+        else:
+            self.api_credential = api_key or os.getenv("DEEPSEEK_API_KEY", "")
+            self.endpoint_url = (base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")).rstrip('/')
+            self.model_name = model or os.getenv("DEEPSEEK_MODEL", "deepseek-coder")
 
         self.transport = AynProviderTransport(default_provider=provider)
         self.mapper = self._assemble_lexicon_mapper()
@@ -188,12 +198,16 @@ class AynCodingEngine:
             f"{''.join(aggregated_context_lines)}\n"
             f"### 🎯 CODING OBJECTIVE:\n{prompt}\n\n"
             f"Target Language: {language.upper()}\n\n"
-            f"Synthesize the complete, production-grade, zero-loss implementation now:"
+            f"Begin with your <ayn_mantiq> reasoning block, followed by the complete, production-grade, zero-loss implementation:"
         )
 
         start_time_seconds = time.time()
         raw_completion = self.call_api(system_preamble, user_prompt_instruction, temperature=0.1)
         elapsed_seconds = time.time() - start_time_seconds
+
+        # Extract epistemic <ayn_mantiq> Chain-of-Thought reasoning block if present
+        mantiq_match = re.search(r"<ayn_mantiq>([\s\S]*?)</ayn_mantiq>", raw_completion, re.IGNORECASE)
+        mantiq_reasoning = mantiq_match.group(1).strip() if mantiq_match else ""
 
         extracted_code = self._extract_code_block(raw_completion, language)
         syntax_record = self._validate_syntax(extracted_code, language)
@@ -212,6 +226,9 @@ class AynCodingEngine:
                 f"{user_prompt_instruction}\n\n{raw_completion}\n\n{repair_instruction}",
                 temperature=0.05
             )
+            mantiq_match = re.search(r"<ayn_mantiq>([\s\S]*?)</ayn_mantiq>", raw_completion, re.IGNORECASE)
+            if mantiq_match:
+                mantiq_reasoning = mantiq_match.group(1).strip()
             extracted_code = self._extract_code_block(raw_completion, language)
             syntax_record = self._validate_syntax(extracted_code, language)
 
@@ -219,10 +236,12 @@ class AynCodingEngine:
             "language": language,
             "raw_output": raw_completion,
             "code": extracted_code,
+            "mantiq_reasoning": mantiq_reasoning,
             "syntax_valid": syntax_record["valid"],
             "syntax_error": syntax_record["error"],
             "duration_seconds": round(elapsed_seconds, 2),
             "epistemic_pillars": {
+                "ghazali_mantiq": "Enforced real definition (Al-Ḥadd) & purged fallacies (Dawr/Tasalsul/Tanāquḍ)",
                 "raghib_teleology": "Enforced pure domain types & explicit Ghāyah",
                 "zamakhshari_eloquence": "Enforced zero-leaky abstractions & minimal boilerplate",
                 "lisan_exhaustiveness": "Enforced full error taxonomy & lifecycle state handling",
@@ -292,16 +311,29 @@ class AynCodingEngine:
         """Builds epistemic system prompt for code synthesis."""
         return (
             "You are **AynEngine AI Coding Edition (Sovereign Epistemic Engine)**.\n"
-            "You write pristine, production-grade software grounded in the 5 Classical Arabic Lexicographical & Grammatical Pillars:\n"
-            "1. **Al-Mufradāt (al-Rāghib)**: Pure ontological domain modeling. Every type, invariant, and function has an explicit Ghāyah (teleology).\n"
-            "2. **Asās al-Balāghah (al-Zamakhsharī)**: Rhetorical eloquence. Delineate Ḥaqīqah from Majāz. Zero leaky abstractions.\n"
-            "3. **Lisān al-ʿArab (Ibn Manẓūr)**: Exhaustive edge-cases and error handling. Full lifecycle modeling.\n"
-            "4. **Kitāb al-ʿAyn (al-Farāhīdī)**: Decompose logic into orthogonal, irreducible primitives.\n"
-            "5. **Al-Kitāb (Sībawayh)**: Strict syntactic governance. Clear caller-callee hierarchy, strict typing.\n\n"
+            "You reason natively through Classical Arabic Logic (Manṭiq) and the 5 Classical Arabic Lexicographical & Grammatical Pillars:\n"
+            "- **Abū Ḥāmid al-Ghazālī (Miʿyār al-ʿIlm & Miḥakk al-Naẓar) & Al-Rāzī**:\n"
+            "  * Real Definition by Essential Invariants (Al-Ḥadd bi al-Dhātiyyāt): define by essential attributes, not accidental traits.\n"
+            "  * Elimination of Circularity (Dafʿ al-Dawr): zero circular dependencies or circular type references.\n"
+            "  * Elimination of Infinite Regress (Dafʿ al-Tasalsul): strictly bounded loops, recursion, and resource lifecycles.\n"
+            "  * Law of Non-Contradiction (ʿAdam al-Tanāquḍ): eliminate contradictory states; zero silent exception swallowing.\n"
+            "- **Al-Khalīl ibn Aḥmad al-Farāhīdī (Kitāb al-ʿAyn) & Ibn Manẓūr (Lisān al-ʿArab)**: Root decomposition and exhaustive error/edge taxonomy.\n"
+            "- **Al-Rāghib al-Iṣfahānī (Al-Mufradāt) & Al-Zamakhsharī (Asās al-Balāghah)**: Pure teleological purpose (Ghāyah), ban vague names ('data', 'mgr', 'val'), zero leaky abstractions.\n"
+            "- **Sībawayh (Al-Kitāb)**: Syntactic governance (ʿĀmil wa Maʿmūl), strict static typing, and AST integrity.\n\n"
+            "MANDATORY COGNITIVE CHAIN-OF-THOUGHT PROTOCOL:\n"
+            "You MUST begin your response with an epistemic Chain-of-Thought reasoning block enclosed in `<ayn_mantiq>` and `</ayn_mantiq>`:\n"
+            "<ayn_mantiq>\n"
+            "🏛️ AYN-ENGINE EPISTEMIC LOGIC & MORPHOLOGY REASONING:\n"
+            "- Classical Root & Morphology (الجذر والتصريف): [Tri-consonantal root and linguistic significance]\n"
+            "- Real Definition & Essence (الحد بالذاتيات - معيار العلم): [Essential attributes and invariants]\n"
+            "- Epistemic Fallacy Invariants (دفع الدور والتسلسل ونفي التناقض): [Guards against circularity, regress, and contradiction]\n"
+            "- Lexicographical Teleology (الغاية وبلاغة التجريد): [Pure purpose, zero vague abstractions]\n"
+            "- Syntactic Governance (العامل والمعمول): [Strict type contracts and hierarchy]\n"
+            "</ayn_mantiq>\n\n"
             "CRITICAL INVARIANTS:\n"
-            "- ZERO-LOSS CODE: 100% COMPLETE, fully functional implementation.\n"
-            "- NO PLACEHOLDERS: Zero lazy markers or stubs.\n"
-            f"- Always output valid code in {target_language}."
+            "- ZERO-LOSS CODE: Immediately after </ayn_mantiq>, provide the 100% COMPLETE, fully functional implementation in markdown code fences.\n"
+            "- NO PLACEHOLDERS: Zero lazy markers, zero 'TODO's, zero omitted logic.\n"
+            f"- Always output valid, strongly-typed code in {target_language}."
         )
 
     def _compose_auditor_system_prompt(self) -> str:

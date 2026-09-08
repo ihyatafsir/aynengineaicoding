@@ -22,6 +22,9 @@ BASE_DIR = script_path.parent if (script_path.parent / "core").exists() else scr
 sys.path.insert(0, str(BASE_DIR))
 
 from core.coding_engine import AynCodingEngine
+from core.mantiq_engine import AynMantiqEngine
+from core.mantiq_dataset_generator import AynMantiqDatasetGenerator
+from core.mantiq_purifier import AynMantiqPurifier
 
 # ANSI Color formatting
 BOLD = "\033[1m"
@@ -58,6 +61,11 @@ def cmd_gen(args, engine: AynCodingEngine):
     print(f"\n{GREEN}{BOLD}════════════════════════════════════════════════════════════════════════════════{RESET}")
     print(f"{GREEN}{BOLD}✅ SYNTHESIS COMPLETE in {res['duration_seconds']}s | Syntax Valid: {res['syntax_valid']}{RESET}")
     print(f"{GREEN}{BOLD}════════════════════════════════════════════════════════════════════════════════{RESET}\n")
+
+    if res.get("mantiq_reasoning") and not args.code_only:
+        print(f"{MAGENTA}{BOLD}🏛️ AYN-ENGINE CLASSICAL MANṬIQ & MORPHOLOGY REASONING:{RESET}")
+        print(f"{MAGENTA}{res['mantiq_reasoning']}{RESET}\n")
+        print(f"{CYAN}{'─'*80}{RESET}\n")
 
     if args.code_only:
         print(res["code"])
@@ -223,6 +231,59 @@ def cmd_pillars(args):
      Zero circular dependencies. Strict static typing, pure data flow, and unambiguous contracts.
 """)
 
+def cmd_mantiq_dataset(args):
+    print_banner()
+    output_path = Path(args.output) if args.output else BASE_DIR / "data/ayn_mantiq_epistemic_dataset.jsonl"
+    print(f"{CYAN}🏛️ Synthesizing Epistemic Manṭiq & Morphology Training Dataset...{RESET}")
+    generator = AynMantiqDatasetGenerator()
+    records = generator.build_dataset(output_file=output_path)
+    print(f"\n{GREEN}{BOLD}✅ Dataset Generated Successfully:{RESET} {len(records)} records")
+    print(f"📁 Output File: {output_path.resolve()}\n")
+    for idx, r in enumerate(records, 1):
+        print(f"{CYAN}[{idx}/{len(records)}] {BOLD}{r['id']}{RESET} (Domain: {r['domain']})")
+        print(f"   Prompt: {r['instruction']}")
+        print(f"   Scratchpad Preview: {r['thought'].splitlines()[1] if len(r['thought'].splitlines()) > 1 else ''}\n")
+
+def cmd_mantiq_audit(args):
+    print_banner()
+    target = Path(args.target)
+    if not target.is_file():
+        print(f"{RED}❌ Error: Target must be an existing file: {target}{RESET}")
+        sys.exit(1)
+    code = target.read_text(encoding="utf-8", errors="ignore")
+    print(f"{CYAN}⚖️ Executing Ghazalian Manṭiq Fallacy Audit on `{target.name}`...{RESET}\n")
+    engine = AynMantiqEngine()
+    critique = engine.audit_logic_fallacies(code)
+    status_icon = f"{GREEN}✅ VALID{RESET}" if critique.is_valid else f"{RED}⚠️ FALLACIES DETECTED{RESET}"
+    print(f"Status: {status_icon}")
+    print(f"Citation: {critique.axiom_citation}")
+    if critique.detected_fallacies:
+        print(f"Detected Fallacies: {', '.join([f.value for f in critique.detected_fallacies])}")
+    print(f"Remediation: {critique.remediation}\n")
+
+def cmd_purify(args):
+    print_banner()
+    target = Path(args.target)
+    if not target.is_file():
+        print(f"{RED}❌ Error: Target must be an existing file: {target}{RESET}")
+        sys.exit(1)
+    code = target.read_text(encoding="utf-8", errors="ignore")
+    print(f"{CYAN}🌿 Purifying `{target.name}` from unlogical artifacts (Manṭiq & Al-Mufradāt)...{RESET}\n")
+    report = AynMantiqPurifier.purify_python_code(code)
+    print(f"{GREEN}{BOLD}✅ PURIFICATION COMPLETE:{RESET}")
+    for j in report.classical_justifications:
+        print(f" • {j}")
+    print("\n--- Purified Code Preview ---")
+    print(report.purified_code[:600] + ("..." if len(report.purified_code) > 600 else ""))
+
+    if args.in_place:
+        target.write_text(report.purified_code, encoding="utf-8")
+        print(f"\n{GREEN}💾 Updated {target.resolve()} in-place.{RESET}")
+    elif args.output:
+        out = Path(args.output)
+        out.write_text(report.purified_code, encoding="utf-8")
+        print(f"\n{GREEN}💾 Saved purified code to {out.resolve()}.{RESET}")
+
 def main():
     parser = argparse.ArgumentParser(
         description="AynEngine AI Coding Edition: Sovereign 5-Pillar Epistemic Code Engine",
@@ -270,6 +331,20 @@ def main():
     # Command: pillars
     p_pillars = subparsers.add_parser("pillars", help="Explain the 5 Classical Pillars and their software mappings")
 
+    # Command: mantiq-dataset
+    p_mantiq_data = subparsers.add_parser("mantiq-dataset", help="Synthesize Epistemic Manṭiq & Morphology training dataset")
+    p_mantiq_data.add_argument("-o", "--output", type=str, help="Output JSONL filepath")
+
+    # Command: mantiq-audit
+    p_mantiq_audit = subparsers.add_parser("mantiq-audit", help="Audit code for Classical Logic fallacies (Dawr, Tasalsul, Majaz Mukhil)")
+    p_mantiq_audit.add_argument("target", type=str, help="File to audit")
+
+    # Command: purify
+    p_purify = subparsers.add_parser("purify", help="Purge unlogical artifacts, bare exceptions, and amorphous names")
+    p_purify.add_argument("target", type=str, help="File to purify")
+    p_purify.add_argument("-o", "--output", type=str, help="Output file")
+    p_purify.add_argument("-i", "--in-place", action="store_true", help="Overwrite file in-place")
+
     args = parser.parse_args()
 
     if not args.subcommand:
@@ -279,6 +354,15 @@ def main():
 
     if args.subcommand == "pillars":
         cmd_pillars(args)
+        sys.exit(0)
+    elif args.subcommand == "mantiq-dataset":
+        cmd_mantiq_dataset(args)
+        sys.exit(0)
+    elif args.subcommand == "mantiq-audit":
+        cmd_mantiq_audit(args)
+        sys.exit(0)
+    elif args.subcommand == "purify":
+        cmd_purify(args)
         sys.exit(0)
 
     # Initialize Engine for operational commands
