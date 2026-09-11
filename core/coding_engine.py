@@ -55,8 +55,12 @@ class AynCodingEngine:
             self.model_name = model or os.getenv("OPENAI_MODEL", "gpt-4o")
         else:
             self.api_credential = api_key or os.getenv("DEEPSEEK_API_KEY", "")
-            self.endpoint_url = (base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")).rstrip('/')
-            self.model_name = model or os.getenv("DEEPSEEK_MODEL", "deepseek-coder")
+            configured_url = (base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1/chat/completions")).rstrip('/')
+            if not configured_url.endswith("/chat/completions"):
+                self.endpoint_url = f"{configured_url}/v1/chat/completions"
+            else:
+                self.endpoint_url = configured_url
+            self.model_name = model or os.getenv("DEEPSEEK_MODEL", "deepseek-flash")
 
         self.transport = AynProviderTransport(default_provider=provider)
         self.mapper = self._assemble_lexicon_mapper()
@@ -124,7 +128,9 @@ class AynCodingEngine:
         system_prompt: str,
         user_prompt: str,
         temperature: float = 0.1,
-        max_tokens: int = 8192
+        max_tokens: int = 4096,
+        timeout_seconds: int = 600,
+        enable_thinking: bool = False
     ) -> str:
         """Dispatches completion request through the provider transport layer."""
         request_configuration = GenerationConfig(
@@ -135,7 +141,9 @@ class AynCodingEngine:
             provider_protocol=self.configured_provider,
             api_endpoint=self.endpoint_url,
             api_credential=self.api_credential,
-            system_preamble=system_prompt
+            system_preamble=system_prompt,
+            timeout_seconds=timeout_seconds,
+            enable_thinking=enable_thinking
         )
         generation_outcome = self.transport.execute_generation(request_configuration)
         return generation_outcome.synthesized_text
@@ -188,7 +196,7 @@ class AynCodingEngine:
         rag_context_block = self.mapper.build_epistemic_coding_context(prompt, language)
         aggregated_context_lines = []
         if context_files:
-            aggregated_context_lines.append("\n### 📂 CONTEXT / EXISTING FILES:\n")
+            aggregated_context_lines.append("\n###  CONTEXT / EXISTING FILES:\n")
             for filename_entry, code_payload in context_files.items():
                 aggregated_context_lines.append(f"\nFile: `{filename_entry}`\n```\n{code_payload}\n```\n")
 
@@ -196,13 +204,13 @@ class AynCodingEngine:
         user_prompt_instruction = (
             f"{rag_context_block}\n"
             f"{''.join(aggregated_context_lines)}\n"
-            f"### 🎯 CODING OBJECTIVE:\n{prompt}\n\n"
+            f"###  CODING OBJECTIVE:\n{prompt}\n\n"
             f"Target Language: {language.upper()}\n\n"
             f"Begin with your <ayn_mantiq> reasoning block, followed by the complete, production-grade, zero-loss implementation:"
         )
 
         start_time_seconds = time.time()
-        raw_completion = self.call_api(system_preamble, user_prompt_instruction, temperature=0.1)
+        raw_completion = self.call_api(system_preamble, user_prompt_instruction, temperature=0.1, max_tokens=4096)
         elapsed_seconds = time.time() - start_time_seconds
 
         # Extract epistemic <ayn_mantiq> Chain-of-Thought reasoning block if present
@@ -213,8 +221,8 @@ class AynCodingEngine:
         syntax_record = self._validate_syntax(extracted_code, language)
         placeholder_flags = self._check_zero_loss_placeholders(extracted_code)
 
-        if placeholder_flags or not syntax_record["valid"]:
-            print(f"⚠️ [Zero-Loss Validator] Detected flaws (AST: {syntax_record['valid']}, Placeholders: {len(placeholder_flags)}). Refining...")
+        if placeholder_flags or not syntax_record["valid"] or not extracted_code.strip():
+            print(f" [Zero-Loss Validator] Detected flaws (AST: {syntax_record['valid']}, Placeholders: {len(placeholder_flags)}, Empty: {not extracted_code.strip()}). Refining...")
             repair_instruction = (
                 f"The prior code output had the following issues:\n"
                 f"Syntax Valid: {syntax_record['valid']} (Error: {syntax_record['error']})\n"
@@ -224,7 +232,8 @@ class AynCodingEngine:
             raw_completion = self.call_api(
                 system_preamble,
                 f"{user_prompt_instruction}\n\n{raw_completion}\n\n{repair_instruction}",
-                temperature=0.05
+                temperature=0.05,
+                max_tokens=4096
             )
             mantiq_match = re.search(r"<ayn_mantiq>([\s\S]*?)</ayn_mantiq>", raw_completion, re.IGNORECASE)
             if mantiq_match:
@@ -259,7 +268,7 @@ class AynCodingEngine:
         system_preamble = self._compose_auditor_system_prompt()
         user_prompt_instruction = (
             f"{rag_context_block}\n\n"
-            f"### 📄 CODE UNDER AUDIT (Language: {language.upper()}, File: `{filename or 'unnamed'}`):\n"
+            f"###  CODE UNDER AUDIT (Language: {language.upper()}, File: `{filename or 'unnamed'}`):\n"
             f"```{language}\n{code}\n```\n\n"
             f"Deliver your comprehensive 5-Pillar Epistemic Audit now:"
         )
@@ -286,13 +295,13 @@ class AynCodingEngine:
         system_preamble = self._compose_refactor_system_prompt()
         user_prompt_instruction = (
             f"{rag_context_block}\n\n"
-            f"### 🎯 REFACTORING GOAL:\n{goal}\n\n"
-            f"### 📄 ORIGINAL CODE ({language.upper()}):\n```{language}\n{code}\n```\n\n"
+            f"###  REFACTORING GOAL:\n{goal}\n\n"
+            f"###  ORIGINAL CODE ({language.upper()}):\n```{language}\n{code}\n```\n\n"
             f"Provide the complete refactored implementation and Epistemic Delta now:"
         )
 
         start_time_seconds = time.time()
-        refactored_output = self.call_api(system_preamble, user_prompt_instruction, temperature=0.1)
+        refactored_output = self.call_api(system_preamble, user_prompt_instruction, temperature=0.1, max_tokens=4096)
         elapsed_seconds = time.time() - start_time_seconds
 
         purified_code = self._extract_code_block(refactored_output, language)
@@ -323,7 +332,7 @@ class AynCodingEngine:
             "MANDATORY COGNITIVE CHAIN-OF-THOUGHT PROTOCOL:\n"
             "You MUST begin your response with an epistemic Chain-of-Thought reasoning block enclosed in `<ayn_mantiq>` and `</ayn_mantiq>`:\n"
             "<ayn_mantiq>\n"
-            "🏛️ AYN-ENGINE EPISTEMIC LOGIC & MORPHOLOGY REASONING:\n"
+            " AYN-ENGINE EPISTEMIC LOGIC & MORPHOLOGY REASONING:\n"
             "- Classical Root & Morphology (الجذر والتصريف): [Tri-consonantal root and linguistic significance]\n"
             "- Real Definition & Essence (الحد بالذاتيات - معيار العلم): [Essential attributes and invariants]\n"
             "- Epistemic Fallacy Invariants (دفع الدور والتسلسل ونفي التناقض): [Guards against circularity, regress, and contradiction]\n"

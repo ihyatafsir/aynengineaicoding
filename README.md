@@ -1,4 +1,4 @@
-# ⚡ AynEngine AI Coding Edition (`ayncode`)
+#  AynEngine AI Coding Edition (`ayncode`)
 
 > **Sovereign 5-Pillar Epistemic Software Engineering Engine Guided by Classical Arabic Lexicography & Grammar**
 
@@ -15,7 +15,7 @@ A state-of-the-art software synthesis, code audit, and refactoring engine powere
 
 ---
 
-## 🏛️ The 5 Pillars of Epistemic Software Engineering
+##  The 5 Pillars of Epistemic Software Engineering
 
 ```mermaid
 graph TD
@@ -52,7 +52,7 @@ graph TD
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Installation & Environment
 
@@ -95,7 +95,7 @@ Transforms legacy or fragile code to meet 5-Pillar classical standards:
 
 ---
 
-## 📁 Repository Architecture
+##  Repository Architecture
 
 ```
 aynengineaicoding/
@@ -117,7 +117,7 @@ aynengineaicoding/
 
 ---
 
-## 🧪 Testing
+##  Testing
 
 Run the automated test suite:
 
@@ -135,6 +135,6 @@ OK
 
 ---
 
-## 📜 License
+##  License
 
 MIT License. Designed with classical rigor and epistemological precision.

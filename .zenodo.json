@@ -1,0 +1,33 @@
+{
+  "title": "Hierarchical Symbolic-Neural Mixture of Experts (H-MoE): Sub-15s Sovereign Code Synthesis and Epistemic Invariant Governance on Commodity Server CPUs",
+  "creators": [
+    {
+      "name": "AynEngine, Enver",
+      "affiliation": "Sovereign Epistemic AI Research / AynEngine Project"
+    }
+  ],
+  "description": "The complete H-MoE architecture, research paper, OpenAI HumanEval benchmark suite, unlearning dataset, and sub-1ms symbolic AST logic gate for sub-15s CPU inference.",
+  "access_right": "open",
+  "license": "Apache-2.0",
+  "keywords": [
+    "Speculative Decoding",
+    "Mixture of Experts",
+    "Epistemic Logic",
+    "CPU Acceleration",
+    "AST Compilation",
+    "Classical Arabic Logic",
+    "HumanEval Benchmark"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://huggingface.co/enver/ayncoding-qwen3-8b-slim",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://huggingface.co/datasets/enver/classical-arabic-logic-slop-unlearning",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}

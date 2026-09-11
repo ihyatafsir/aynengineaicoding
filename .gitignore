@@ -10,3 +10,8 @@ data/
 *.egg-info/
 dist/
 build/
+*.gguf
+*.bin
+*.safetensors
+*.tar.gz
+

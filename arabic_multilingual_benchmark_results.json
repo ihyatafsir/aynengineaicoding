@@ -1,0 +1,41 @@
+[
+  {
+    "id": "arabic_rust_rate_limiter",
+    "title": "Rust: Asynchronous Token-Bucket Rate Limiter",
+    "language": "rust",
+    "duration_seconds": 4.8,
+    "tier": "tier_1_instant_draft",
+    "speedup": "20x - 30x (Pure Fast Path)",
+    "grade": "A+",
+    "score": 96.0,
+    "ast_valid": true,
+    "purged": true,
+    "code": "<ayn_mantiq>"
+  },
+  {
+    "id": "arabic_cpp_lockfree_queue",
+    "title": "C++20: Atomic Lock-Free Single-Producer Single-Consumer Queue",
+    "language": "cpp",
+    "duration_seconds": 4.57,
+    "tier": "tier_1_instant_draft",
+    "speedup": "20x - 30x (Pure Fast Path)",
+    "grade": "A+",
+    "score": 96.0,
+    "ast_valid": true,
+    "purged": true,
+    "code": "<ayn_mantiq>"
+  },
+  {
+    "id": "arabic_python_merkle_tree",
+    "title": "Python: Cryptographic Merkle Tree with Epistemic Proofs",
+    "language": "python",
+    "duration_seconds": 17.06,
+    "tier": "tier_1_instant_draft",
+    "speedup": "20x - 30x (Pure Fast Path)",
+    "grade": "A+",
+    "score": 96.0,
+    "ast_valid": true,
+    "purged": true,
+    "code": "import hashlib\n\nclass MerkleTree:\n    def __init__(self, payload_bytes):\n        self.payload_bytes = payload_bytes\n        self.tree = []\n        self.build_tree()\n\n    def build_tree(self):\n        # Convert payload_bytes to bytes and hash each block\n        hashed_data = [hashlib.sha256(block.encode()).hexdigest() for block in self.payload_bytes]\n\n        while len(hashed_data) > 1:\n            if len(hashed_data) % 2 != 0:\n                hashed_data.append(hashlib.sha256(\"\".encode()).hexdigest())\n\n            # Create new level of the tree\n            new_level = []\n            for i in range(0, len(hashed_data), 2):\n                parent_hash = hashlib.sha256((hashed_data[i] + hashed_data[i+1]).encode()).hexdigest()\n                new_level.append(parent_hash)\n            self.tree.append(new_level)\n            hashed_data = new_level\n\n        # The root of the tree is the last element in the list\n        self.root = hashed_data[0]\n\n    def verify(self, leaf_index):\n        # Verify the audit path from the leaf to the root\n        current_node = self.payload_bytes[leaf_index]\n        for i in range(len(self.tree) - 1, -1, -1):\n            parent_hash = hashlib.sha256((current_node + self.tree[i][0]).encode()).hexdigest()\n            if parent_hash != self.tree[i][1]:\n                return False\n            current_node = self.tree[i][1]\n\n        # The root hash should match the computed root hash\n        return self.root == current_node\n\n# Example usage:\npayload_bytes = [\"Hello\", \"World\"]\nmtree = MerkleTree(payload_bytes)\nprint(\"Root Hash:\", mtree.root)\n\nleaf_index = 0\naudit_path_proof = mtree.verify(leaf_index)\nprint(\"Audit Path Proof:\", audit_path_proof)"
+  }
+]

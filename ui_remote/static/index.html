@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AynCoding Remote - Gemma-2</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+</head>
+<body>
+    <!-- Header: GravityRemote Visual Identity -->
+    <header class="header">
+        <div class="brand">
+            <span>◆ AYNCODING REMOTE</span>
+            <span class="brand-badge">GEMMA-2</span>
+        </div>
+        <div class="header-right">
+            <div class="live-indicator">
+                <div class="pulse-dot"></div>
+                <span>LIVE</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-label">CPU</span>
+                <span class="stat-value" id="cpu-stat">0.0%</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-label">RAM</span>
+                <span class="stat-value" id="ram-stat">-- MB</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-label">LLM</span>
+                <span class="stat-value" id="ollama-stat" style="color: var(--accent-green);">ONLINE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Control Bar -->
+    <div class="control-bar">
+        <div class="model-select-wrap">
+            <select id="model-select" class="model-select">
+                <option value="ayncoding-gemma2" selected>ayncoding-gemma2 (2.6B NUMA-16)</option>
+                <option value="ayncoding-model">ayncoding-model (Qwen 1.5B)</option>
+                <option value="qwen2.5-coder:1.5b">qwen2.5-coder:1.5b (Base)</option>
+            </select>
+        </div>
+        <button id="btn-new-chat" class="control-btn" title="Clear Conversation">
+            <span>+</span> New Chat
+        </button>
+        <button id="btn-open-purify" class="control-btn btn-cyan" title="Open Classical Epistemic Purifier Sandbox">
+            <span>🌿</span> Purify Sandbox
+        </button>
+        <button id="btn-open-audit" class="control-btn btn-gold" title="Run 5-Pillar Static Epistemic Audit">
+            <span>🧪</span> Epistemic Audit
+        </button>
+        <button id="btn-reload-stats" class="control-btn" title="Refresh Telemetry">
+            <span>⟳</span> Refresh
+        </button>
+    </div>
+
+    <!-- Quick Prompts Carousel -->
+    <div class="quick-prompts">
+        <button class="quick-chip" data-prompt="Design a lock-free, zero-allocation Ring Buffer in C++20 with cache-line padding and verify with classical Arabic logic.">
+            ⚡ Lock-Free Ring Buffer (C++20)
+        </button>
+        <button class="quick-chip" data-prompt="Implement an Epistemic Circuit Breaker in Python 3.12 with State Pattern, zero-loss typing, and strict invariant validation.">
+            🛡️ Epistemic Circuit Breaker (Python)
+        </button>
+        <button class="quick-chip" data-prompt="Create a high-throughput Token Bucket Rate Limiter using monotonic nanosecond clocks and zero bare-except clauses.">
+            ⏳ Token Bucket Rate Limiter
+        </button>
+        <button class="quick-chip" data-prompt="Architect a Write-Ahead Log (WAL) engine in Python with fsync guarantees, binary frame serialization, and crash recovery.">
+            📜 Write-Ahead Log Engine
+        </button>
+        <button class="quick-chip" data-prompt="Write a Python module to compute geometric median in 2D with convergence proof and full type annotations.">
+            📐 Geometric Median Algorithm
+        </button>
+    </div>
+
+    <!-- Chat Messages Container -->
+    <main class="chat-container" id="chat-container">
+        <!-- Initial Welcome Message -->
+        <div class="message-row">
+            <div class="message-header avatar-ai">
+                <span>🏛️ AynCoding Gemma-2 (Autonomous Epistemic Agent)</span>
+            </div>
+            <div class="message-body">
+                <div class="mantiq-drawer">
+                    <div class="mantiq-drawer-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                        <span>⟨ayn_mantiq: Epistemic Foundation & Activation⟩</span>
+                        <span class="mantiq-toggle-icon">▼</span>
+                    </div>
+                    <div class="mantiq-drawer-content">
+[تَحْقِيقُ الأَصْلِ - Verification of Principle]:
+Engine: Google Gemma 2 (2.6B parameters) fine-tuned on Classical Arabic Logic (Manṭiq) dataset.
+Hardware Affinity: 16-thread NUMA execution, Ollama host backend.
+Epistemic Pillars:
+ 1. Burhān (Demonstrative Proof) - Rigorous mathematical and logical guarantees.
+ 2. Wudūḥ (Total Clarity) - Complete type safety, zero ambiguous naming.
+ 3. Salāmah (Impeccable Correctness) - Pure AST parsing, zero bare exceptions.
+ 4. Iḥkām (Robust Architecture) - High cohesion, modularity, and resource stewardship.
+ 5. Tahdhīb (Epistemic Hygiene) - Zero fake placeholders (TODO, pass, NotImplementedError).
+                    </div>
+                </div>
+                <p>Welcome to <strong>AynCoding Remote [Gemma-2 Edition]</strong>. I am trained to construct production-grade systems code infused with deductive classical logic and verified by the 5-Pillar Static Epistemic Audit. Choose a challenge above or submit your requirements below.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Input Section -->
+    <footer class="input-section">
+        <div class="input-container">
+            <textarea id="chat-input" class="chat-input" placeholder="Ask ayncoding-gemma2 to architect, implement, or evaluate code..." rows="1"></textarea>
+            <button id="send-btn" class="send-btn">
+                <span>Send</span> ↵
+            </button>
+        </div>
+    </footer>
+
+    <!-- Modal: Epistemic Audit -->
+    <div id="modal-audit" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>🧪 5-Pillar Epistemic Code Audit</span>
+                <button class="modal-close" onclick="closeModal('modal-audit')">×</button>
+            </div>
+            <div class="modal-content">
+                <p style="color: var(--text-secondary); margin-bottom: 8px;">Submit code snippet for AST verification, logic fallacy scanning, and epistemic grading:</p>
+                <textarea id="audit-code-input" class="chat-input" style="width: 100%; min-height: 120px; font-family: var(--font-mono); font-size: 12px;" placeholder="# Paste Python or C++ code here to audit..."></textarea>
+                <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 8px;">
+                    <button class="control-btn btn-gold" id="btn-run-audit-modal">Analyze Code</button>
+                </div>
+                <div id="audit-results-container" style="margin-top: 14px; display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Purify Sandbox -->
+    <div id="modal-purify" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>🌿 Classical Epistemic Code Purifier</span>
+                <button class="modal-close" onclick="closeModal('modal-purify')">×</button>
+            </div>
+            <div class="modal-content">
+                <p style="color: var(--text-secondary); margin-bottom: 8px;">Cleanse code of unlogical variable names, bare exceptions, and epistemic contaminants:</p>
+                <textarea id="purify-code-input" class="chat-input" style="width: 100%; min-height: 120px; font-family: var(--font-mono); font-size: 12px;" placeholder="# Paste unpurified code here..."></textarea>
+                <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 8px;">
+                    <button class="control-btn btn-cyan" id="btn-run-purify-modal">Purify Code</button>
+                </div>
+                <div id="purify-results-container" style="margin-top: 14px; display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

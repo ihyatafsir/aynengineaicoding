@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this architecture, code, or dataset in your research, please cite it as below."
+authors:
+  - family-names: "AynEngine"
+    given-names: "Enver"
+    affiliation: "Sovereign Epistemic AI Research / AynEngine Project"
+    website: "https://huggingface.co/enver/ayncoding-qwen3-8b-slim"
+title: "Hierarchical Symbolic-Neural Mixture of Experts (H-MoE): Sub-15s Sovereign Code Synthesis and Epistemic Invariant Governance on Commodity Server CPUs"
+version: 1.0.0
+date-released: 2026-09-09
+url: "https://huggingface.co/enver/ayncoding-qwen3-8b-slim"
+repository-code: "https://huggingface.co/enver/ayncoding-qwen3-8b-slim"
+keywords:
+  - "speculative decoding"
+  - "mixture of experts"
+  - "epistemic logic"
+  - "cpu inference"
+  - "classical arabic logic"
+  - "knowledge unlearning"
+  - "ast compiler gate"

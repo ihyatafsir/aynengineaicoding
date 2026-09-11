@@ -235,7 +235,7 @@ class AynMantiqEngine:
         secondary_root = roots[1] if len(roots) > 1 else self.ROOT_ONTOLOGY["عقد"]
 
         scratchpad = f"""<ayn_mantiq>
-🏛️ AYN-ENGINE EPISTEMIC CHAIN-OF-THOUGHT (MANṬIQ & ISHTIQĀQ)
+ AYN-ENGINE EPISTEMIC CHAIN-OF-THOUGHT (MANṬIQ & ISHTIQĀQ)
 Target Architecture: {target_language.upper()}
 Problem Specification: "{prompt}"
 

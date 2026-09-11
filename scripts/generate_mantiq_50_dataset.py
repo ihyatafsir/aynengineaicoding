@@ -1076,7 +1076,7 @@ def generate_full_50_dataset(output_path: Path):
         try:
             ast.parse(code)
         except SyntaxError as e:
-            print(f"❌ SyntaxError in {item['id']}: {e}")
+            print(f" SyntaxError in {item['id']}: {e}")
             raise
 
         scratchpad = mantiq_engine.generate_mantiq_scratchpad(instruction, "python")
@@ -1096,7 +1096,7 @@ def generate_full_50_dataset(output_path: Path):
         for r in records:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
-    print(f"✅ Generated {len(records)} verified records in: {output_path}")
+    print(f" Generated {len(records)} verified records in: {output_path}")
     return records
 
 

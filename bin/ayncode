@@ -296,6 +296,12 @@ def main():
         choices=["deepseek", "openai", "ollama", "offline"],
         help="LLM inference provider or offline mode (default: deepseek)"
     )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=os.getenv("AYN_MODEL", None),
+        help="Model identifier override (e.g., ayncoding-gemma2, ayncoding-model)"
+    )
     subparsers = parser.add_subparsers(dest="subcommand", help="Available subcommands")
 
     # Command: gen
@@ -366,7 +372,7 @@ def main():
         sys.exit(0)
 
     # Initialize Engine for operational commands
-    engine = AynCodingEngine(provider=args.provider)
+    engine = AynCodingEngine(provider=args.provider, model=args.model)
 
     if args.subcommand == "gen":
         cmd_gen(args, engine)

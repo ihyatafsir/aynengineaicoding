@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aynengine-hmoe"
+version = "1.0.0"
+authors = [
+  { name="Enver AynEngine", email="enver@ayncoding.ai" },
+]
+description = "Hierarchical Symbolic-Neural Mixture of Experts (H-MoE) for Sub-15s CPU Code Synthesis & Epistemic Invariant Governance"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Code Generators",
+]
+dependencies = [
+    "huggingface_hub>=0.20.0",
+]
+
+[project.scripts]
+ayncode = "core.cli:main"
+ayn-hmoe = "core.cli:main"
+
+[project.urls]
+"Homepage" = "https://huggingface.co/enver/ayncoding-qwen3-8b-slim"
+"Research Paper" = "https://huggingface.co/enver/ayncoding-qwen3-8b-slim/resolve/main/paper/H_MoE_RESEARCH_PAPER.pdf"
+"Dataset" = "https://huggingface.co/datasets/enver/classical-arabic-logic-slop-unlearning"
+"Interactive Space" = "https://huggingface.co/spaces/enver/aynengine-h-moe-studio"

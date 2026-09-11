@@ -1,0 +1,27 @@
+{
+  "model": "ayncoding-model",
+  "pass_at_1": 66.7,
+  "details": [
+    {
+      "task_id": "HumanEval/0",
+      "entry_point": "has_close_elements",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 12.73
+    },
+    {
+      "task_id": "HumanEval/1",
+      "entry_point": "separate_paren_groups",
+      "passed": false,
+      "error": "AssertionError: ",
+      "elapsed_seconds": 13.61
+    },
+    {
+      "task_id": "HumanEval/2",
+      "entry_point": "truncate_number",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 6.62
+    }
+  ]
+}

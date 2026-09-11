@@ -23,7 +23,7 @@ def resolve_path(rel_path: str) -> Path:
         return fb
     return p
 
-# 🏛️ Classical 5-Pillar Lexicon & Grammar Paths
+#  Classical 5-Pillar Lexicon & Grammar Paths
 LISAN_PATH = resolve_path("lisanclean.json")
 KITAB_AL_AYN_PATH = resolve_path("lexicons/kitab_al_ayn/kitab_al_ayn_dictionary.json")
 RAGHIB_MUFRADAT_PATH = resolve_path("lexicons/raghib_mufradat/raghib_mufradat_dictionary.json")

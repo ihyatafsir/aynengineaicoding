@@ -51,7 +51,8 @@ class AynAstValidator:
         if fenced_blocks:
             captured_blocks = [m.group(1).strip() for m in fenced_blocks]
             return max(captured_blocks, key=len)
-        return trimmed_source
+        cleaned_text = re.sub(r"<ayn_mantiq>[\s\S]*?</ayn_mantiq>", "", trimmed_source, flags=re.IGNORECASE).strip()
+        return cleaned_text
 
     @classmethod
     def validate_syntax(cls, source_code: str, language_name: str) -> AstValidationResult:
@@ -72,11 +73,44 @@ class AynAstValidator:
     @classmethod
     def _validate_python_ast(cls, source_code: str) -> AstValidationResult:
         try:
-            ast.parse(source_code)
+            tree = ast.parse(source_code)
+            missing_imports = cls._find_unimported_modules(tree)
+            if missing_imports:
+                error_msg = f"Unimported standard library modules used without import: {', '.join(missing_imports)}"
+                return AstValidationResult(is_valid=False, diagnostic_error=error_msg, target_language="python")
             return AstValidationResult(is_valid=True, target_language="python")
         except SyntaxError as syntax_err:
             message = f"Python SyntaxError at line {syntax_err.lineno}: {syntax_err.msg}"
             return AstValidationResult(is_valid=False, diagnostic_error=message, target_language="python")
+
+    @classmethod
+    def _find_unimported_modules(cls, tree: ast.AST) -> List[str]:
+        """Detects usage of ubiquitous standard library modules that were not imported."""
+        imported_symbols = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    imported_symbols.add(alias.asname or alias.name.split('.')[0])
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    imported_symbols.add(node.module.split('.')[0])
+                for alias in node.names:
+                    imported_symbols.add(alias.asname or alias.name)
+
+        defined_names = set(dir(__builtins__)) | imported_symbols
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                defined_names.add(node.name)
+            elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                defined_names.add(node.id)
+
+        common_modules = {'time', 'os', 'sys', 'json', 'math', 're', 'random', 'threading', 'asyncio', 'datetime', 'collections', 'typing'}
+        missing = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+                if node.id in common_modules and node.id not in defined_names:
+                    missing.add(node.id)
+        return sorted(list(missing))
 
     @classmethod
     def _validate_json_syntax(cls, source_code: str) -> AstValidationResult:

@@ -58,7 +58,7 @@ class TestWyreSupCommunicationBenchmark(unittest.TestCase):
 
         # Print Benchmark Report
         print("\n" + "="*85)
-        print("🏛️ AYNENGINE (v2.0) TESTBED BENCHMARK: WYRESUP P2P COMMUNICATION SUBSYSTEM")
+        print(" AYNENGINE (v2.0) TESTBED BENCHMARK: WYRESUP P2P COMMUNICATION SUBSYSTEM")
         print("="*85)
         print(f"Dedicated Protocol Core Score: {proto_bench['macro_epistemic_score']}% (Grade: {proto_bench['macro_grade']})")
         print(f"Full Subsystem Macro Score:   {full_bench['macro_epistemic_score']}% (Grade: {full_bench['macro_grade']})")

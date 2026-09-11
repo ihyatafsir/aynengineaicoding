@@ -1,0 +1,27 @@
+{
+  "model": "qwen2.5-coder:1.5b",
+  "pass_at_1": 100.0,
+  "details": [
+    {
+      "task_id": "HumanEval/0",
+      "entry_point": "has_close_elements",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 14.98
+    },
+    {
+      "task_id": "HumanEval/1",
+      "entry_point": "separate_paren_groups",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 8.2
+    },
+    {
+      "task_id": "HumanEval/2",
+      "entry_point": "truncate_number",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 5.87
+    }
+  ]
+}

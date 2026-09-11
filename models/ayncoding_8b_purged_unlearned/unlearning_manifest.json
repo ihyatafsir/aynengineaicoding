@@ -1,0 +1,23 @@
+{
+  "engine": "AynEngine AI Coding Edition",
+  "operation": "Knowledge Purge & Epistemic Unlearning",
+  "target_model": "Qwen/Qwen3-8B",
+  "purged_subnetworks": [
+    "noisy_web_slop_trivia",
+    "ungrounded_variable_heuristics",
+    "silent_exception_suppression",
+    "circular_lock_graph_associations"
+  ],
+  "infused_epistemic_authorities": [
+    "Abū Ḥāmid al-Ghazālī (Logic & Fallacy Elimination)",
+    "Fakhr al-Dīn al-Rāzī (Non-Contradiction)",
+    "Al-Khalīl ibn Aḥmad al-Farāhīdī (Root Decompositions)",
+    "Ibn Manẓūr (Exhaustive Error Taxonomy)",
+    "Al-Rāghib al-Iṣfahānī (Pure Teleology)",
+    "Al-Zamakhsharī (Ḥaqīqah vs Majāz)",
+    "Sībawayh (Syntactic Governance)"
+  ],
+  "training_samples_count": 55,
+  "status": "PURGED_AND_ALIGNED",
+  "timestamp": "2026-09-08T22:59:20Z"
+}

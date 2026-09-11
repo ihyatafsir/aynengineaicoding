@@ -72,6 +72,8 @@ class GenerationConfig:
     api_credential: Optional[str] = None
     stream_telemetry: bool = False
     system_preamble: str = ""
+    timeout_seconds: int = 600
+    enable_thinking: bool = False
 
 
 @dataclass
@@ -104,7 +106,7 @@ class AynProviderTransport:
     }
 
     DEFAULT_MODELS: Dict[str, str] = {
-        "deepseek": os.getenv("DEEPSEEK_MODEL", "deepseek-coder"),
+        "deepseek": os.getenv("DEEPSEEK_MODEL", "deepseek-flash"),
         "openai": os.getenv("OPENAI_MODEL", "gpt-4o"),
         "ollama": os.getenv("OLLAMA_MODEL", "ayncoding-model"),
         "offline": "ayn-deterministic-v1"
@@ -148,7 +150,7 @@ class AynProviderTransport:
             )
             stitched_segments.append(chunk_text)
 
-            if finish_reason != "length":
+            if finish_reason != "length" or not chunk_text:
                 break
 
             stitch_count += 1
@@ -179,12 +181,20 @@ class AynProviderTransport:
             messages_payload.append({"role": "system", "content": config_record.system_preamble})
         messages_payload.append({"role": "user", "content": active_prompt})
 
-        request_dictionary = {
-            "model": config_record.model_descriptor or self.DEFAULT_MODELS.get(config_record.provider_protocol.lower(), "deepseek-coder"),
+        request_dictionary: Dict[str, Any] = {
+            "model": config_record.model_descriptor or self.DEFAULT_MODELS.get(config_record.provider_protocol.lower(), "deepseek-flash"),
             "messages": messages_payload,
             "temperature": config_record.sampling_temperature,
             "max_tokens": config_record.token_budget
         }
+
+        # DeepSeek Flash reasoning toggle (disabled by default for low latency & predictable token budgets)
+        if config_record.provider_protocol.lower() == "deepseek":
+            if not config_record.enable_thinking:
+                request_dictionary["thinking"] = {"type": "disabled"}
+            else:
+                request_dictionary["thinking"] = {"type": "enabled"}
+
         encoded_body = json.dumps(request_dictionary).encode("utf-8")
 
         headers_mapping = {
@@ -200,7 +210,7 @@ class AynProviderTransport:
         )
 
         try:
-            with urllib.request.urlopen(http_request, timeout=120) as http_response:
+            with urllib.request.urlopen(http_request, timeout=config_record.timeout_seconds) as http_response:
                 response_bytes = http_response.read()
                 response_json = json.loads(response_bytes.decode("utf-8"))
                 choice_node = response_json.get("choices", [{}])[0]

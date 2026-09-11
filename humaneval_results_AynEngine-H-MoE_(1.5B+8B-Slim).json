@@ -1,0 +1,146 @@
+{
+  "model": "AynEngine-H-MoE (1.5B+8B-Slim)",
+  "pass_at_1": 95.0,
+  "details": [
+    {
+      "task_id": "HumanEval/0",
+      "entry_point": "has_close_elements",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 8.73
+    },
+    {
+      "task_id": "HumanEval/1",
+      "entry_point": "separate_paren_groups",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 11.31
+    },
+    {
+      "task_id": "HumanEval/2",
+      "entry_point": "truncate_number",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 6.4
+    },
+    {
+      "task_id": "HumanEval/3",
+      "entry_point": "below_zero",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 7.2
+    },
+    {
+      "task_id": "HumanEval/4",
+      "entry_point": "mean_absolute_deviation",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 7.45
+    },
+    {
+      "task_id": "HumanEval/5",
+      "entry_point": "intersperse",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 6.79
+    },
+    {
+      "task_id": "HumanEval/6",
+      "entry_point": "parse_nested_parens",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 10.3
+    },
+    {
+      "task_id": "HumanEval/7",
+      "entry_point": "filter_by_substring",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 4.64
+    },
+    {
+      "task_id": "HumanEval/8",
+      "entry_point": "sum_product",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 8.44
+    },
+    {
+      "task_id": "HumanEval/9",
+      "entry_point": "rolling_max",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 7.98
+    },
+    {
+      "task_id": "HumanEval/10",
+      "entry_point": "make_palindrome",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 8.95
+    },
+    {
+      "task_id": "HumanEval/11",
+      "entry_point": "string_xor",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 9.46
+    },
+    {
+      "task_id": "HumanEval/12",
+      "entry_point": "longest",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 7.58
+    },
+    {
+      "task_id": "HumanEval/13",
+      "entry_point": "greatest_common_divisor",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 5.72
+    },
+    {
+      "task_id": "HumanEval/14",
+      "entry_point": "all_prefixes",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 3.09
+    },
+    {
+      "task_id": "HumanEval/15",
+      "entry_point": "string_sequence",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 3.95
+    },
+    {
+      "task_id": "HumanEval/16",
+      "entry_point": "count_distinct_characters",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 6.06
+    },
+    {
+      "task_id": "HumanEval/17",
+      "entry_point": "parse_music",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 12.52
+    },
+    {
+      "task_id": "HumanEval/18",
+      "entry_point": "how_many_times",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 7.26
+    },
+    {
+      "task_id": "HumanEval/19",
+      "entry_point": "sort_numbers",
+      "passed": false,
+      "error": "AssertionError: ",
+      "elapsed_seconds": 10.51
+    }
+  ]
+}

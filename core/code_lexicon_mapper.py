@@ -314,7 +314,7 @@ class AynCodeLexiconMapper:
         roots = self.extract_relevant_roots(prompt)
 
         header_lines = [
-            "🏛️ AYNENGINE AI (v2.0): 5-PILLAR CLASSICAL EPISTEMIC CODING APPARATUS",
+            " AYNENGINE AI (v2.0): 5-PILLAR CLASSICAL EPISTEMIC CODING APPARATUS",
             f"Target Architecture / Language: {language.upper()}",
             f"Active Conceptual Dimensions: {', '.join(dims).title()}",
             ""
@@ -333,7 +333,7 @@ class AynCodeLexiconMapper:
     def _render_raghib_section(self, roots: List[str]) -> List[str]:
         """Renders Pillar 1: Al-Mufradāt teleology anchor."""
         output_rows = [
-            "1️⃣ AL-MUFRADĀT (Al-Rāghib al-Iṣfahānī) — Teleology & Ontological Domain Modeling:",
+            "1 AL-MUFRADĀT (Al-Rāghib al-Iṣfahānī) — Teleology & Ontological Domain Modeling:",
             "   • Invariant: Every type, entity, and function must have an unambiguous Ghāyah (teleology).",
             "   • Rule: Eliminate amorphous, bloated types (no generic 'amorphous_entity', 'processor', or 'manager')."
         ]
@@ -355,7 +355,7 @@ class AynCodeLexiconMapper:
     def _render_zamakhshari_section(self, roots: List[str]) -> List[str]:
         """Renders Pillar 2: Asās al-Balāghah eloquence anchor."""
         output_rows = [
-            "\n2️⃣ ASĀS AL-BALĀGHAH (Al-Zamakhsharī) — Rhetorical Eloquence & Abstraction Integrity (Ḥaqīqah vs Majāz):",
+            "\n2 ASĀS AL-BALĀGHAH (Al-Zamakhsharī) — Rhetorical Eloquence & Abstraction Integrity (Ḥaqīqah vs Majāz):",
             "   • Invariant: Delineate literal runtime reality (CPU, IO, sockets, allocations) from software metaphors (ORMs, wrappers, promises).",
             "   • Rule: Zero leaky abstractions (Majāz Mukhil). Eliminate stuttering boilerplate; write idiomatic, high-impact code."
         ]
@@ -378,7 +378,7 @@ class AynCodeLexiconMapper:
     def _render_lisan_section(self, roots: List[str]) -> List[str]:
         """Renders Pillar 3: Lisān al-ʿArab coverage anchor."""
         output_rows = [
-            "\n3️⃣ LISĀN AL-ʿARAB (Ibn Manẓūr) — Exhaustive State-Space, Edge-Cases & Error Taxonomy:",
+            "\n3 LISĀN AL-ʿARAB (Ibn Manẓūr) — Exhaustive State-Space, Edge-Cases & Error Taxonomy:",
             "   • Invariant: Exhaustive morphological coverage. Zero unhandled match cases, unhandled rejections, or silent failures.",
             "   • Rule: Model every state of the lifecycle: Initializing -> Active -> Degraded -> Closed -> Failed."
         ]
@@ -398,7 +398,7 @@ class AynCodeLexiconMapper:
     def _render_farahidi_section(self, roots: List[str]) -> List[str]:
         """Renders Pillar 4: Kitāb al-ʿAyn primitive decomposition anchor."""
         output_rows = [
-            "\n4️⃣ KITĀB AL-ʿAYN (Al-Farāhīdī) — Atomic Primitive Decomposition & State Permutations:",
+            "\n4 KITĀB AL-ʿAYN (Al-Farāhīdī) — Atomic Primitive Decomposition & State Permutations:",
             "   • Invariant: Decompose complex logic into orthogonal, irreducible mathematical primitives.",
             "   • Rule: Combinatorial state safety — Make illegal states unrepresentable in the type system.",
             "   • Ensure foundational primitives are pure, stateless, and idempotent."
@@ -418,7 +418,7 @@ class AynCodeLexiconMapper:
     def _render_sibawayh_section(self, active_dims: List[str]) -> List[str]:
         """Renders Pillar 5: Al-Kitāb of Sībawayh syntactic governance anchor."""
         output_rows = [
-            "\n5️⃣ AL-KITĀB (Sībawayh) — Syntactic Governance (ʿĀmil/Maʿmūl) & AST Integrity:",
+            "\n5 AL-KITĀB (Sībawayh) — Syntactic Governance (ʿĀmil/Maʿmūl) & AST Integrity:",
             "   • Invariant: Strict caller-callee hierarchy. The Governor (ʿĀmil) explicitly controls the Governed (Maʿmūl).",
             "   • Rule: Zero circular dependencies. Strict static typing, pure information flow, and unambiguous function signatures."
         ]

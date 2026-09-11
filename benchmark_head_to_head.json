@@ -1,0 +1,117 @@
+[
+  {
+    "challenge_id": "challenge_1_ring_buffer",
+    "challenge_title": "Thread-Safe Monotonic Ring Buffer",
+    "local_model": {
+      "duration_seconds": 17.5,
+      "syntax_valid": true,
+      "mantiq_cot_present": true,
+      "composite_score": 89.6,
+      "grade": "B+",
+      "fallacies_detected": [
+        "dawr"
+      ],
+      "pillars": {
+        "p1_teleology": 6.8,
+        "p2_eloquence": 10.0,
+        "p3_exhaustiveness": 8.0,
+        "p4_decomposition": 10.0,
+        "p5_governance": 10.0
+      },
+      "code_snippet": "import threading\n\nclass CircularRingBuffer:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.buffer = [None] * capacity\n        self.head = 0\n        self.tail = 0\n        self.lock = threading.Lock()\n\n    def enqueue(self, item):\n        with self.lock:\n            if..."
+    },
+    "antigravity": {
+      "duration_seconds": 0.05,
+      "syntax_valid": true,
+      "mantiq_cot_present": true,
+      "composite_score": 98.0,
+      "grade": "A+",
+      "fallacies_detected": [],
+      "pillars": {
+        "p1_teleology": 10.0,
+        "p2_eloquence": 10.0,
+        "p3_exhaustiveness": 10.0,
+        "p4_decomposition": 9.0,
+        "p5_governance": 10.0
+      }
+    }
+  },
+  {
+    "challenge_id": "challenge_2_circuit_breaker",
+    "challenge_title": "Epistemic FSM Circuit Breaker",
+    "local_model": {
+      "duration_seconds": 16.9,
+      "syntax_valid": true,
+      "mantiq_cot_present": true,
+      "composite_score": 100.0,
+      "grade": "A+",
+      "fallacies_detected": [
+        "dawr"
+      ],
+      "pillars": {
+        "p1_teleology": 10.0,
+        "p2_eloquence": 10.0,
+        "p3_exhaustiveness": 10.0,
+        "p4_decomposition": 10.0,
+        "p5_governance": 10.0
+      },
+      "code_snippet": "# Define the states of the circuit breaker\nclass CircuitBreaker:\n    def __init__(self):\n        self.state = \"CLOSED\"\n        self.failure_threshold = 3\n        self.failures = 0\n\n    # Method to handle incoming requests\n    def handle_request(self, request):\n        if self.state == \"OPEN\":\n      ..."
+    },
+    "antigravity": {
+      "duration_seconds": 0.05,
+      "syntax_valid": true,
+      "mantiq_cot_present": true,
+      "composite_score": 98.0,
+      "grade": "A+",
+      "fallacies_detected": [
+        "dawr"
+      ],
+      "pillars": {
+        "p1_teleology": 10.0,
+        "p2_eloquence": 10.0,
+        "p3_exhaustiveness": 10.0,
+        "p4_decomposition": 9.0,
+        "p5_governance": 10.0
+      }
+    }
+  },
+  {
+    "challenge_id": "challenge_3_wal_log",
+    "challenge_title": "Atomic Write-Ahead Log (WAL) with CRC32",
+    "local_model": {
+      "duration_seconds": 17.56,
+      "syntax_valid": true,
+      "mantiq_cot_present": true,
+      "composite_score": 93.0,
+      "grade": "A",
+      "fallacies_detected": [
+        "dawr"
+      ],
+      "pillars": {
+        "p1_teleology": 8.5,
+        "p2_eloquence": 10.0,
+        "p3_exhaustiveness": 8.0,
+        "p4_decomposition": 10.0,
+        "p5_governance": 10.0
+      },
+      "code_snippet": "import hashlib\n\nclass WAL:\n    def __init__(self):\n        self.records = []\n        self.lock = threading.Lock()\n\n    def append(self, record):\n        with self.lock:\n            # Calculate CRC32 checksum for the record\n            crc32_checksum = hashlib.crc32(record.encode()).hexdigest()\n     ..."
+    },
+    "antigravity": {
+      "duration_seconds": 0.05,
+      "syntax_valid": true,
+      "mantiq_cot_present": true,
+      "composite_score": 94.0,
+      "grade": "A",
+      "fallacies_detected": [
+        "dawr"
+      ],
+      "pillars": {
+        "p1_teleology": 10.0,
+        "p2_eloquence": 10.0,
+        "p3_exhaustiveness": 8.0,
+        "p4_decomposition": 9.0,
+        "p5_governance": 10.0
+      }
+    }
+  }
+]

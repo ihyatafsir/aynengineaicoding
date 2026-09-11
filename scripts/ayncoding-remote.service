@@ -1,0 +1,15 @@
+[Unit]
+Description=AynCoding Remote Web Server (GravityRemote clone for AynCoding Gemma-2 on :4000)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/absolut7/aynengineaicoding
+ExecStart=/usr/bin/python3 /home/absolut7/aynengineaicoding/ui_remote/server.py
+Restart=always
+RestartSec=3
+Environment=PORT=4000
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
