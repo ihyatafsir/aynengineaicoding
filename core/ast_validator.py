@@ -141,12 +141,94 @@ class AynAstValidator:
             return AstValidationResult(is_valid=False, diagnostic_error=f"Node execution failure: {exec_err}", target_language="javascript")
 
     @classmethod
+    def _strip_comments_and_strings(cls, source_code: str) -> str:
+        """Strips single/multi-line comments and string literals to prevent delimiter false positives."""
+        result = []
+        i = 0
+        n = len(source_code)
+        in_line_comment = False
+        in_block_comment = False
+        in_single_quote = False
+        in_double_quote = False
+        in_template_literal = False
+
+        while i < n:
+            ch = source_code[i]
+            prev = source_code[i - 1] if i > 0 else ''
+            next_ch = source_code[i + 1] if i + 1 < n else ''
+
+            if in_line_comment:
+                if ch == '\n':
+                    in_line_comment = False
+                    result.append('\n')
+                i += 1
+                continue
+
+            if in_block_comment:
+                if ch == '*' and next_ch == '/':
+                    in_block_comment = False
+                    i += 2
+                    continue
+                i += 1
+                continue
+
+            if in_single_quote:
+                if ch == "'" and prev != '\\':
+                    in_single_quote = False
+                i += 1
+                continue
+
+            if in_double_quote:
+                if ch == '"' and prev != '\\':
+                    in_double_quote = False
+                i += 1
+                continue
+
+            if in_template_literal:
+                if ch == '`' and prev != '\\':
+                    in_template_literal = False
+                i += 1
+                continue
+
+            if ch == '/' and next_ch == '/':
+                in_line_comment = True
+                i += 2
+                continue
+
+            if ch == '/' and next_ch == '*':
+                in_block_comment = True
+                i += 2
+                continue
+
+            if ch == "'":
+                in_single_quote = True
+                i += 1
+                continue
+
+            if ch == '"':
+                in_double_quote = True
+                i += 1
+                continue
+
+            if ch == '`':
+                in_template_literal = True
+                i += 1
+                continue
+
+            result.append(ch)
+            i += 1
+
+        return "".join(result)
+
+    @classmethod
     def _validate_bracket_symmetry(cls, source_code: str, language_name: str) -> AstValidationResult:
         bracket_mapping = {'(': ')', '{': '}', '[': ']'}
         closing_delimiters = set(bracket_mapping.values())
         symbol_stack: List[str] = []
 
-        for char_token in source_code:
+        code_to_check = cls._strip_comments_and_strings(source_code)
+
+        for char_token in code_to_check:
             if char_token in bracket_mapping:
                 symbol_stack.append(bracket_mapping[char_token])
                 continue

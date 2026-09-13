@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""
+AynEngine Ghazali Mantiq CLI (ayn-mantiq)
+Epistemic RAG Code Synthesis & Purification Engine powered by DeepSeek Flash 4.1.
+
+Strict Zero-Emoji Policy Enforced.
+"""
+
+import os
+import sys
+import argparse
+from pathlib import Path
+
+# Add project root to sys.path
+_BIN_DIR = Path(__file__).parent.resolve()
+_PROJECT_ROOT = _BIN_DIR.parent.resolve()
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+from core.ghazali_mantiq_rag import GhazaliMantiqRAG
+from core.ghazali_deepseek_synthesizer import GhazaliDeepSeekSynthesizer
+
+
+def cmd_axioms(args):
+    rag = GhazaliMantiqRAG()
+    print("================================================================================")
+    print("              AYNENGINE GHAZALI MANTIQ EPISTEMIC AXIOMS & PILLARS               ")
+    print("================================================================================")
+    print("\n--- FOUNDATIONAL GHAZALIAN EPISTEMIC AXIOMS ---")
+    for key, axiom in rag.axioms.items():
+        print(f"\n[Axiom] {axiom.name} ({axiom.arabic_name})")
+        print(f"  Source:     {axiom.classical_source}")
+        print(f"  Principle:  {axiom.epistemic_principle}")
+        print(f"  Invariant:  {axiom.computational_invariant}")
+        print(f"  Directive:  {axiom.code_enforcement_rule}")
+        if axiom.banned_patterns:
+            print(f"  Banned:     {', '.join(axiom.banned_patterns)}")
+
+    print("\n--- THE 5 LINGUISTIC-ARCHITECTURAL PILLARS ---")
+    for key, pillar in rag.pillars.items():
+        print(f"\n[Pillar] {pillar.scholar} ({pillar.arabic_name})")
+        print(f"  Work:       {pillar.canonical_work}")
+        print(f"  Role:       {pillar.software_architecture_role}")
+        print(f"  Concept:    {pillar.foundational_concept}")
+        print(f"  Directive:  {pillar.enforcement_directive}")
+    print("================================================================================\n")
+
+
+def cmd_purify(args):
+    target_path = Path(args.file)
+    if not target_path.exists():
+        print(f"Error: File '{args.file}' does not exist.")
+        sys.exit(1)
+
+    code_content = target_path.read_text(encoding="utf-8", errors="ignore")
+    language = args.lang or target_path.suffix.lstrip(".") or "typescript"
+
+    rag = GhazaliMantiqRAG()
+    audit_report = rag.audit_code_purity(code_content, language)
+
+    print(f"\n=== Epistemic Purity Audit: {target_path.name} ===")
+    print(f"Target Language: {language}")
+    print(f"Axiom Compliance: {audit_report['axiom_compliance_rate']}%")
+    print(f"Pure (Zero-Fallacy): {audit_report['is_pure']}")
+
+    if audit_report["violations"]:
+        print(f"\nDetected {len(audit_report['violations'])} Epistemic Violation(s):")
+        for idx, violation in enumerate(audit_report["violations"], 1):
+            print(f"  {idx}. {violation}")
+
+        if args.fix:
+            print("\n[*] Initiating Epistemic Self-Correction via DeepSeek Flash 4.1...")
+            synthesizer = GhazaliDeepSeekSynthesizer()
+            fix_prompt = (
+                f"Refactor the following {language} code from {target_path.name} to eliminate all Ghazali epistemic violations:\n"
+                + "\n".join(f"- {v}" for v in audit_report["violations"])
+                + f"\n\nSource Code:\n```{language}\n{code_content}\n```"
+            )
+            res = synthesizer.synthesize(fix_prompt, target_language=language, verbose=True)
+            if res.is_pure or res.epistemic_score > audit_report["axiom_compliance_rate"]:
+                target_path.write_text(res.synthesized_code, encoding="utf-8")
+                print(f"[+] Purified code written back to {target_path} (Compliance: {res.epistemic_score}%)")
+            else:
+                print("[-] Unable to achieve higher purity score. File unchanged.")
+    else:
+        print("\n[+] Pristine: 0 epistemic violations found. Code satisfies all Ghazali invariants.")
+
+
+def cmd_synthesize(args):
+    task = args.task
+    language = args.lang
+    output_file = args.out
+
+    print(f"=== Ghazali Mantiq RAG + DeepSeek Flash 4.1 Synthesizer ===")
+    print(f"Task: {task}")
+    print(f"Language: {language}")
+
+    synthesizer = GhazaliDeepSeekSynthesizer()
+    result = synthesizer.synthesize(
+        task_prompt=task,
+        target_language=language,
+        max_refinement_passes=args.passes,
+        verbose=True
+    )
+
+    print("\n--------------------------------------------------------------------------------")
+    print(f"Synthesis Result Summary:")
+    print(f"  Duration:         {result.duration_seconds}s")
+    print(f"  Refinement Passes: {result.refinement_iterations}")
+    print(f"  Epistemic Score:  {result.epistemic_score}%")
+    print(f"  Purity Verified:  {result.is_pure}")
+    print(f"  Lines Generated:  {len(result.synthesized_code.splitlines())}")
+    print("--------------------------------------------------------------------------------")
+
+    if output_file:
+        out_path = Path(output_file)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(result.synthesized_code, encoding="utf-8")
+        print(f"[+] Formally verified code saved to: {out_path.resolve()}")
+    else:
+        print("\nGenerated Code:\n")
+        print(result.synthesized_code)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="AynEngine Ghazali Mantiq Epistemic RAG & DeepSeek Flash 4.1 CLI",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # Subcommand: axioms
+    subparsers.add_parser("axioms", help="Display Ghazali epistemic axioms and 5 classical linguistic pillars")
+
+    # Subcommand: purify
+    purify_parser = subparsers.add_parser("purify", help="Audit and purify code against Ghazali epistemic axioms")
+    purify_parser.add_argument("file", help="Path to code file to audit")
+    purify_parser.add_argument("--lang", default=None, help="Target language (defaults to file extension)")
+    purify_parser.add_argument("--fix", action="store_true", help="Automatically correct violations via DeepSeek Flash 4.1")
+
+    # Subcommand: synthesize
+    syn_parser = subparsers.add_parser("synthesize", help="Synthesize Grade A+ code using Ghazali RAG + DeepSeek Flash 4.1")
+    syn_parser.add_argument("task", help="Description of component or algorithm to synthesize")
+    syn_parser.add_argument("--lang", default="TypeScript", help="Target programming language (default: TypeScript)")
+    syn_parser.add_argument("--out", default=None, help="Output file path")
+    syn_parser.add_argument("--passes", type=int, default=3, help="Max epistemic refinement passes (default: 3)")
+
+    args = parser.parse_args()
+
+    if args.command == "axioms":
+        cmd_axioms(args)
+    elif args.command == "purify":
+        cmd_purify(args)
+    elif args.command == "synthesize":
+        cmd_synthesize(args)
+
+
+if __name__ == "__main__":
+    main()
