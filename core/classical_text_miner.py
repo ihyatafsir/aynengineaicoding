@@ -119,7 +119,17 @@ class ClassicalTextMiner:
 
         if self._cached_asas and root_str in self._cached_asas:
             entry = self._cached_asas[root_str]
-            lookup_result["asas_balagha"] = str(entry)[:300]
+            if isinstance(entry, dict):
+                lit = entry.get("literal_usage", "").replace("\n", " ").strip()
+                maj = entry.get("metaphorical_usage", "").replace("\n", " ").strip()
+                parts = []
+                if lit:
+                    parts.append(f"حقيقة: {lit}")
+                if maj:
+                    parts.append(f"مجاز: {maj}")
+                lookup_result["asas_balagha"] = " | ".join(parts) if parts else str(entry)
+            else:
+                lookup_result["asas_balagha"] = str(entry)
 
         # 2. Kitāb al-ʿAyn (Farahidi)
         if self._cached_ayn is None and self.kitab_ayn_json.exists():
@@ -129,12 +139,21 @@ class ClassicalTextMiner:
                 self._cached_ayn = {}
 
         if self._cached_ayn:
-            # Check with and without spaces
             spaced_root = " ".join(list(root_str))
             if spaced_root in self._cached_ayn:
-                lookup_result["kitab_al_ayn"] = str(self._cached_ayn[spaced_root])[:300]
+                lookup_result["kitab_al_ayn"] = str(self._cached_ayn[spaced_root])
             elif root_str in self._cached_ayn:
-                lookup_result["kitab_al_ayn"] = str(self._cached_ayn[root_str])[:300]
+                lookup_result["kitab_al_ayn"] = str(self._cached_ayn[root_str])
+
+        # 3. Lisān al-ʿArab (Ibn Manẓūr)
+        if self._cached_lisan is None and self.lisan_json.exists():
+            try:
+                self._cached_lisan = json.loads(self.lisan_json.read_text(encoding="utf-8"))
+            except Exception:
+                self._cached_lisan = {}
+
+        if self._cached_lisan and root_str in self._cached_lisan:
+            lookup_result["lisan_al_arab"] = str(self._cached_lisan[root_str]).strip()
 
         return lookup_result
 

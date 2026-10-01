@@ -279,10 +279,20 @@ def cmd_purify(args):
     if args.in_place:
         target.write_text(report.purified_code, encoding="utf-8")
         print(f"\n{GREEN}💾 Updated {target.resolve()} in-place.{RESET}")
-    elif args.output:
-        out = Path(args.output)
-        out.write_text(report.purified_code, encoding="utf-8")
-        print(f"\n{GREEN}💾 Saved purified code to {out.resolve()}.{RESET}")
+def cmd_translate(args):
+    print_banner()
+    from core.sibawayh_syntax_translator import translate_classical_arabic
+    text = args.text
+    print(f"{CYAN}🏛️ Translating via Sībawayh & Al-Farāhīdī BPE-Free Sovereign Engine...{RESET}\n")
+    res = translate_classical_arabic(text)
+    print(f"{BOLD}Arabic Input  :{RESET} {res['arabic_input']}")
+    print(f"{BOLD}Engine Mode   :{RESET} {CYAN}{res['engine']}{RESET}")
+    print(f"\n{GREEN}{BOLD}Classical EN  :{RESET} {GREEN}{res['english_translation']}{RESET}\n")
+    if res.get("constituents"):
+        print(f"{MAGENTA}{BOLD}📜 Syntactic Constituents (Al-Kitāb of Sībawayh):{RESET}")
+        for lemma, role, gloss in res["constituents"]:
+            print(f"  • {lemma:<15} [{role:<12}] -> {gloss}")
+        print()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -351,6 +361,10 @@ def main():
     p_purify.add_argument("-o", "--output", type=str, help="Output file")
     p_purify.add_argument("-i", "--in-place", action="store_true", help="Overwrite file in-place")
 
+    # Command: translate
+    p_trans = subparsers.add_parser("translate", help="Translate classical Arabic text via Sībawayh 'Amal & Jurjānī Naẓm")
+    p_trans.add_argument("text", type=str, help="Classical Arabic input sentence or proposition")
+
     args = parser.parse_args()
 
     if not args.subcommand:
@@ -360,6 +374,9 @@ def main():
 
     if args.subcommand == "pillars":
         cmd_pillars(args)
+        sys.exit(0)
+    elif args.subcommand == "translate":
+        cmd_translate(args)
         sys.exit(0)
     elif args.subcommand == "mantiq-dataset":
         cmd_mantiq_dataset(args)

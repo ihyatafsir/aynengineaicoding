@@ -6,7 +6,9 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
-data/
+data/*
+!data/*.jsonl
+!data/*.md
 *.egg-info/
 dist/
 build/
@@ -15,4 +17,10 @@ build/
 *.safetensors
 *.tar.gz
 export/
+credentials_vault/
+*.key
+*.pem
+*.token
+*.secret
+
 
